@@ -1,0 +1,3482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Tutor</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230c0e14'/%3E%3Cpath d='M12 4 3 8.5 12 13l9-4.5L12 4z' fill='%235b7fff'/%3E%3Cpath d='M6 10.7v4.3c0 1.4 2.7 3 6 3s6-1.6 6-3v-4.3l-6 3-6-3z' fill='%238f6bff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+
+  @font-face{
+    font-family:'OpenDyslexic';
+    font-weight:400;
+    font-style:normal;
+    font-display:swap;
+    src:url(https://cdn.jsdelivr.net/fontsource/fonts/opendyslexic@latest/latin-400-normal.woff2) format('woff2'),
+        url(https://cdn.jsdelivr.net/fontsource/fonts/opendyslexic@latest/latin-400-normal.woff) format('woff');
+  }
+  @font-face{
+    font-family:'OpenDyslexic';
+    font-weight:700;
+    font-style:normal;
+    font-display:swap;
+    src:url(https://cdn.jsdelivr.net/fontsource/fonts/opendyslexic@latest/latin-700-normal.woff2) format('woff2'),
+        url(https://cdn.jsdelivr.net/fontsource/fonts/opendyslexic@latest/latin-700-normal.woff) format('woff');
+  }
+
+  /* ============ THEME TOKENS ============ */
+  html{ font-size:16px; }
+  :root{
+    --radius: 14px;
+    --font-display: 'Sora', sans-serif;
+    --font-body: 'IBM Plex Sans', sans-serif;
+  }
+
+  body.dyslexic-font, body.dyslexic-font h2, body.dyslexic-font h3, body.dyslexic-font .logo,
+  body.dyslexic-font input, body.dyslexic-font select, body.dyslexic-font button,
+  body.dyslexic-font .message, body.dyslexic-font .modal, body.dyslexic-font label,
+  body.dyslexic-font .card-face, body.dyslexic-font .stat-card{
+    font-family:'OpenDyslexic', var(--font-body) !important;
+    letter-spacing:.2px;
+  }
+
+  [data-theme="midnight"]{
+    --bg:#0c0e14; --panel:#141824; --panel-2:#191f2e; --border:#242b3d;
+    --text:#e9ecf5; --text-muted:#8890a6; --accent:#5b7fff; --accent-2:#8f6bff;
+    --ai-bubble:#1b2131; --user-bubble:#3752e0; --user-text:#ffffff;
+    --danger:#ff6b6b; --success:#48c78e;
+  }
+  [data-theme="parchment"]{
+    --bg:#f6f2ea; --panel:#fffdf9; --panel-2:#efe8d9; --border:#e0d7c1;
+    --text:#2b2620; --text-muted:#7a6f5c; --accent:#a05a2c; --accent-2:#c98a3f;
+    --ai-bubble:#efe8d9; --user-bubble:#a05a2c; --user-text:#fff8ee;
+    --danger:#c1442e; --success:#3a8a5c;
+  }
+  [data-theme="forest"]{
+    --bg:#0e1712; --panel:#16221b; --panel-2:#1c2b22; --border:#2a3d31;
+    --text:#eaf3ec; --text-muted:#8fa899; --accent:#3ea373; --accent-2:#8fbf5f;
+    --ai-bubble:#1c2b22; --user-bubble:#2f7a56; --user-text:#f2fff6;
+    --danger:#ff7d6b; --success:#8fbf5f;
+  }
+  [data-theme="dusk"]{
+    --bg:#151119; --panel:#1e1826; --panel-2:#251d31; --border:#332944;
+    --text:#f3ecff; --text-muted:#a595c2; --accent:#d97757; --accent-2:#b06bd9;
+    --ai-bubble:#251d31; --user-bubble:#8a4fc9; --user-text:#fff;
+    --danger:#ff6b8a; --success:#7ed9a8;
+  }
+  [data-theme="purple"]{
+    --bg:#100b1c; --panel:#191229; --panel-2:#24183a; --border:#3a2a58;
+    --text:#f5efff; --text-muted:#b3a2d2; --accent:#a879ff; --accent-2:#d18bff;
+    --ai-bubble:#241936; --user-bubble:#7544c8; --user-text:#fff;
+    --danger:#ff7898; --success:#70e0b0;
+  }
+
+  /* ---- Contrast scale: per-theme medium & high variants ---- */
+  [data-theme="midnight"][data-contrast="medium"]{
+    --bg:#06070a; --panel:#0d0f16; --panel-2:#141926; --border:#4a5570;
+    --text:#f5f7fb; --text-muted:#b4bad0; --accent:#7396ff; --accent-2:#a186ff;
+    --ai-bubble:#141926; --user-bubble:#3f5cf0; --user-text:#ffffff;
+    --danger:#ff8080; --success:#5fd6a0;
+  }
+  [data-theme="midnight"][data-contrast="high"]{
+    --bg:#000000; --panel:#000000; --panel-2:#0c0c0c; --border:#ffffff;
+    --text:#ffffff; --text-muted:#e4e4e4; --accent:#8fabff; --accent-2:#c4a6ff;
+    --ai-bubble:#0c0c0c; --user-bubble:#8fabff; --user-text:#000000;
+    --danger:#ff9494; --success:#7dffbf;
+  }
+  [data-theme="parchment"][data-contrast="medium"]{
+    --bg:#fbf8f2; --panel:#ffffff; --panel-2:#eee5d2; --border:#8a7d5f;
+    --text:#171310; --text-muted:#514736; --accent:#8a4a1e; --accent-2:#a8621f;
+    --ai-bubble:#eee5d2; --user-bubble:#8a4a1e; --user-text:#fff8ee;
+    --danger:#a3341f; --success:#286644;
+  }
+  [data-theme="parchment"][data-contrast="high"]{
+    --bg:#ffffff; --panel:#ffffff; --panel-2:#f0f0f0; --border:#000000;
+    --text:#000000; --text-muted:#2a2a2a; --accent:#7a3410; --accent-2:#5a2708;
+    --ai-bubble:#f0f0f0; --user-bubble:#000000; --user-text:#ffffff;
+    --danger:#8a1f10; --success:#164d30;
+  }
+  [data-theme="forest"][data-contrast="medium"]{
+    --bg:#081008; --panel:#0e1a10; --panel-2:#152616; --border:#4c6b53;
+    --text:#eef6ee; --text-muted:#b7ccbb; --accent:#4fc784; --accent-2:#a2dd6c;
+    --ai-bubble:#152616; --user-bubble:#2f8c5c; --user-text:#f2fff6;
+    --danger:#ff9484; --success:#a2dd6c;
+  }
+  [data-theme="forest"][data-contrast="high"]{
+    --bg:#000000; --panel:#000000; --panel-2:#0c0c0c; --border:#ffffff;
+    --text:#ffffff; --text-muted:#e4e4e4; --accent:#6df0a5; --accent-2:#c3f28a;
+    --ai-bubble:#0c0c0c; --user-bubble:#6df0a5; --user-text:#000000;
+    --danger:#ffabab; --success:#a8ffce;
+  }
+  [data-theme="dusk"][data-contrast="medium"]{
+    --bg:#100b16; --panel:#18101f; --panel-2:#20172b; --border:#5f4f7d;
+    --text:#f6f0ff; --text-muted:#c3b3dd; --accent:#e2895f; --accent-2:#c284e8;
+    --ai-bubble:#20172b; --user-bubble:#9a5cd9; --user-text:#ffffff;
+    --danger:#ff8aa0; --success:#8fe6b9;
+  }
+  [data-theme="dusk"][data-contrast="high"]{
+    --bg:#000000; --panel:#000000; --panel-2:#0c0c0c; --border:#ffffff;
+    --text:#ffffff; --text-muted:#e4e4e4; --accent:#ffab80; --accent-2:#dda6ff;
+    --ai-bubble:#0c0c0c; --user-bubble:#ffab80; --user-text:#000000;
+    --danger:#ffabc0; --success:#b0ffd4;
+  }
+
+  body[data-contrast="medium"] .message, body[data-contrast="high"] .message,
+  body[data-contrast="medium"] .panel-box, body[data-contrast="high"] .panel-box,
+  body[data-contrast="medium"] input, body[data-contrast="high"] input,
+  body[data-contrast="medium"] select, body[data-contrast="high"] select,
+  body[data-contrast="medium"] .icon-btn, body[data-contrast="high"] .icon-btn,
+  body[data-contrast="medium"] .swatch, body[data-contrast="high"] .swatch{
+    border-width:2px;
+  }
+
+  /* ============ BASE ============ */
+  *{ box-sizing:border-box; }
+
+  body{
+    margin:0;
+    font-family:var(--font-body);
+    background:var(--bg);
+    color:var(--text);
+    transition:background .25s ease, color .25s ease;
+  }
+
+  h2, h3, .logo, .modal h3{ font-family:var(--font-display); }
+
+  .katex{ font-size:1.05em; color:inherit; }
+  .katex-display{ margin:.6em 0; overflow-x:auto; overflow-y:hidden; }
+  .card-face .katex-display{ margin:0; }
+
+  /* ============ TOPBAR ============ */
+  .topbar{
+    height:56px;
+    background:var(--panel);
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 18px;
+  }
+
+  .logo{ font-size:1.0625rem; font-weight:700; display:flex; align-items:center; gap:8px; letter-spacing:.2px; }
+  .logo-mark{ width:28px; height:28px; flex-shrink:0; }
+  .logo-mark .accent-a{ fill:var(--accent); }
+  .logo-mark .accent-b{ fill:var(--accent-2); }
+
+  .topbar-actions{ display:flex; align-items:center; gap:8px; }
+
+  .signin-btn{
+    display:flex; align-items:center; gap:8px;
+    background:var(--accent); color:#fff; border:none;
+    padding:0 16px; height:38px; border-radius:10px;
+    font-family:var(--font-body); font-weight:600; font-size:.85rem; cursor:pointer;
+  }
+  .signin-btn:hover{ filter:brightness(1.08); }
+  .signin-btn .icon{ width:16px; height:16px; }
+
+  .avatar-btn{
+    display:flex; align-items:center; gap:8px;
+    background:var(--panel-2); border:1px solid var(--border);
+    padding:5px 12px 5px 5px; height:38px; border-radius:20px;
+    cursor:pointer; color:var(--text); font-family:var(--font-body); font-size:.82rem; font-weight:600;
+  }
+  .avatar-circle{
+    width:26px; height:26px; border-radius:50%;
+    background:linear-gradient(135deg, var(--accent), var(--accent-2));
+    color:#fff; display:flex; align-items:center; justify-content:center;
+    font-size:.75rem; font-weight:700; flex-shrink:0;
+  }
+
+  .account-menu{
+    position:absolute; top:64px; right:18px;
+    background:var(--panel); border:1px solid var(--border); border-radius:12px;
+    padding:8px; width:180px; box-shadow:0 10px 24px rgba(0,0,0,0.25); z-index:60; display:none;
+  }
+  .account-menu.open{ display:block; }
+  .account-menu-item{
+    display:flex; align-items:center; gap:10px; width:100%;
+    padding:9px 10px; border-radius:8px; background:transparent; border:none;
+    color:var(--text); font-size:.82rem; cursor:pointer; text-align:left; font-family:var(--font-body);
+  }
+  .account-menu-item:hover{ background:var(--panel-2); }
+  .account-menu-item .icon{ width:15px; height:15px; color:var(--text-muted); }
+
+  .help-list{ display:flex; flex-direction:column; gap:14px; }
+  .help-item{ display:flex; gap:12px; align-items:flex-start; }
+  .help-item .icon{ width:20px; height:20px; color:var(--accent); flex-shrink:0; margin-top:2px; }
+  .help-item .help-title{ font-weight:600; font-size:.88rem; margin-bottom:2px; }
+  .help-item .help-desc{ font-size:.8rem; color:var(--text-muted); line-height:1.4; }
+
+  .icon-btn{
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    width:38px; height:38px;
+    border-radius:10px;
+    cursor:pointer;
+    font-size:1rem;
+    display:flex; align-items:center; justify-content:center;
+    transition:border-color .15s ease, transform .1s ease;
+  }
+  .icon-btn:hover{ border-color:var(--accent); }
+  .icon-btn:active{ transform:scale(0.94); }
+  .icon-btn.small{ width:32px; height:32px; font-size:.85rem; }
+  .icon-btn:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible{
+    outline:2px solid var(--accent);
+    outline-offset:2px;
+  }
+
+  .icon{ width:18px; height:18px; flex-shrink:0; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .icon-btn .icon{ width:18px; height:18px; }
+  .icon-btn.small .icon{ width:16px; height:16px; }
+  .sidebtn .icon{ width:17px; height:17px; color:var(--text-muted); }
+  .sidebtn.active .icon, .sidebtn:hover .icon{ color:var(--text); }
+  .speak-btn .icon{ width:12px; height:12px; }
+  .send .icon{ width:16px; height:16px; margin-right:6px; }
+
+  /* ============ LAYOUT ============ */
+  .layout{ display:flex; height:calc(100vh - 56px); }
+
+  .sidebar{
+    width:210px;
+    background:var(--panel);
+    border-right:1px solid var(--border);
+    padding:16px 12px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    overflow-y:auto;
+  }
+
+  .side-label{
+    font-size:.7rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--text-muted);
+    margin:14px 8px 4px;
+  }
+  .side-label:first-child{ margin-top:2px; }
+
+  .sidebtn{
+    padding:11px 12px;
+    background:transparent;
+    border:1px solid transparent;
+    color:var(--text-muted);
+    border-radius:10px;
+    cursor:pointer;
+    text-align:left;
+    font-size:.875rem;
+    font-family:var(--font-body);
+    display:flex; align-items:center; gap:10px;
+    transition:background .15s ease, color .15s ease;
+  }
+  .sidebtn:hover{ background:var(--panel-2); color:var(--text); }
+  .sidebtn.active{
+    background:var(--panel-2);
+    color:var(--text);
+    border-color:var(--border);
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+
+  .main{ flex:1; padding:22px; overflow-y:auto; display:flex; flex-direction:column; }
+  .view{ display:none; flex:1; flex-direction:column; min-height:0; }
+  .view.active{ display:flex; }
+
+  .panel-box{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:14px 16px;
+  }
+
+  .profile{ margin-bottom:14px; position:relative; }
+  .field{ display:flex; flex-direction:column; gap:6px; }
+  .field label{ font-size:.75rem; color:var(--text-muted); }
+  .search-wrap{ position:relative; }
+  .search-row{ display:flex; gap:8px; }
+  #profileSearch{ flex:1; min-width:0; }
+  .anytopic-btn{ flex-shrink:0; white-space:nowrap; }
+  .anytopic-btn.active{ color:var(--accent); border-color:var(--accent); background:color-mix(in srgb, var(--accent) 10%, var(--panel-2)); }
+
+  .search-current{ font-size:.75rem; color:var(--text-muted); margin-top:8px; }
+  .search-current strong{ color:var(--text); font-weight:600; }
+
+  .suggestions{
+    position:absolute; top:calc(100% + 6px); left:0; right:0;
+    background:var(--panel-2); border:1px solid var(--border); border-radius:10px;
+    max-height:240px; overflow-y:auto; z-index:10; display:none;
+    box-shadow:0 10px 24px rgba(0,0,0,0.25);
+  }
+  .suggestions.open{ display:block; }
+  .suggestion{ padding:10px 14px; cursor:pointer; font-size:.84375rem; display:flex; justify-content:space-between; gap:10px; }
+  .suggestion:hover{ background:var(--bg); }
+  .suggestion .yr{ color:var(--text-muted); font-size:.75rem; }
+
+  select, input{
+    padding:9px 12px;
+    background:var(--panel-2);
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:9px;
+    font-family:var(--font-body);
+    font-size:.875rem;
+  }
+
+  h2#modeTitle{ margin:0 0 12px 2px; font-size:1.1875rem; font-weight:600; }
+
+  /* ---- chat toolbar ---- */
+  .chat-toolbar{
+    display:flex; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap;
+  }
+  .session-tabs{ display:flex; gap:6px; flex-wrap:wrap; flex:1; }
+  .session-tab{
+    padding:7px 12px;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text-muted);
+    border-radius:20px;
+    font-size:.78rem;
+    cursor:pointer;
+  }
+  .session-tab.active{ color:var(--text); border-color:var(--accent); }
+  .toolbar-actions{ display:flex; gap:6px; }
+
+  #chat{
+    flex:1; min-height:280px;
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:18px;
+    overflow-y:auto;
+    display:flex; flex-direction:column;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  #chat.drag-over{
+    border-color:var(--accent);
+    border-style:dashed;
+    background:color-mix(in srgb, var(--accent) 6%, var(--bg));
+  }
+
+  .attachment-chip{
+    display:flex; align-items:center; gap:8px; margin-top:10px;
+    padding:7px 12px; border-radius:20px; border:1px solid var(--border);
+    background:var(--panel-2); font-size:.8rem; color:var(--text); width:fit-content;
+  }
+  .attachment-chip .icon{ width:14px; height:14px; color:var(--text-muted); flex-shrink:0; }
+  .attachment-chip .remove-attachment{
+    display:flex; align-items:center; justify-content:center;
+    width:16px; height:16px; border-radius:50%; background:transparent; border:none;
+    color:var(--text-muted); cursor:pointer; flex-shrink:0;
+  }
+  .attachment-chip .remove-attachment:hover{ background:var(--danger); color:#fff; }
+  .attachment-chip .remove-attachment .icon{ width:10px; height:10px; color:inherit; }
+
+  .message{
+    max-width:72%; padding:12px 14px; margin:6px 0; border-radius:12px;
+    white-space:pre-wrap; line-height:1.5; font-size:.90625rem; position:relative;
+  }
+  .ai{ background:var(--ai-bubble); align-self:flex-start; border-bottom-left-radius:4px; }
+  .user{ background:var(--user-bubble); color:var(--user-text); align-self:flex-end; border-bottom-right-radius:4px; }
+
+  .message-time{ font-size:.68rem; color:var(--text-muted); margin-top:6px; opacity:.75; }
+  .user .message-time{ color:var(--user-text); opacity:.65; text-align:right; }
+
+  #chat.compact .message{ padding:8px 11px; margin:3px 0; font-size:.85rem; line-height:1.4; }
+  #chat.compact .msg-actions{ margin-top:5px; }
+  #chat.compact .message-time{ margin-top:3px; }
+
+  .speak-btn{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:22px; height:22px; margin-top:8px;
+    background:transparent; border:1px solid var(--border); border-radius:6px;
+    color:var(--text-muted); cursor:pointer; font-size:.75rem;
+  }
+  .speak-btn:hover{ color:var(--accent); border-color:var(--accent); }
+
+  .msg-actions{ display:flex; gap:6px; margin-top:8px; }
+  .copy-btn{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:22px; height:22px;
+    background:transparent; border:1px solid var(--border); border-radius:6px;
+    color:var(--text-muted); cursor:pointer; font-size:.75rem;
+  }
+  .copy-btn:hover{ color:var(--accent); border-color:var(--accent); }
+  .copy-btn.copied{ color:var(--success); border-color:var(--success); }
+  .copy-btn .icon{ width:12px; height:12px; }
+
+  .icon-btn.small:disabled{ opacity:.35; cursor:not-allowed; }
+  .icon-btn.small:disabled:hover{ color:var(--text-muted); border-color:var(--border); }
+
+  .thinking{ display:flex; gap:10px; align-items:center; }
+  .thinking-dots{ display:flex; gap:4px; align-items:center; }
+  .thinking span{ width:6px; height:6px; border-radius:50%; background:var(--accent); animation:bounce 1.1s infinite ease-in-out; }
+  .thinking span:nth-child(2){ animation-delay:.15s; }
+  .thinking span:nth-child(3){ animation-delay:.3s; }
+  @keyframes bounce{ 0%,80%,100%{ opacity:.3; transform:translateY(0);} 40%{ opacity:1; transform:translateY(-3px);} }
+  .thinking-timer{ font-size:.75rem; color:var(--text-muted); font-variant-numeric:tabular-nums; }
+  .stop-btn{
+    background:transparent; border:1px solid var(--border); border-radius:6px;
+    color:var(--danger); padding:2px 9px; font-size:.72rem; cursor:pointer;
+    font-family:var(--font-body);
+  }
+  .stop-btn:hover{ border-color:var(--danger); background:rgba(255,107,107,0.1); }
+
+  .chatbox{ display:flex; gap:10px; margin-top:14px; }
+  .chatbox input{ flex:1; }
+  .depth-select{ width:auto; flex-shrink:0; max-width:118px; font-size:.8rem; padding:9px 8px; }
+  .input-meta{ font-size:.7rem; color:var(--text-muted); text-align:right; margin-top:5px; min-height:1em; }
+
+  .send, .primary-btn{
+    background:var(--accent); color:#fff; border:none; padding:0 22px;
+    border-radius:9px; font-family:var(--font-body); font-weight:600;
+    font-size:.875rem; cursor:pointer; transition:filter .15s ease;
+    height:40px; display:inline-flex; align-items:center; justify-content:center;
+  }
+  .send:hover, .primary-btn:hover{ filter:brightness(1.08); }
+  .primary-btn:disabled{ opacity:.5; cursor:not-allowed; }
+
+  .ghost-btn{
+    background:transparent; color:var(--text-muted); border:1px solid var(--border);
+    padding:9px 16px; border-radius:9px; font-size:.8rem; cursor:pointer; font-family:var(--font-body);
+  }
+  .ghost-btn:hover{ color:var(--text); border-color:var(--accent); }
+
+  /* ---- Flashcards ---- */
+  .tool-topbar{ display:flex; gap:10px; margin-bottom:16px; }
+  .tool-topbar input{ flex:1; }
+
+  .flashcard-stage{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:16px; min-height:280px;
+  }
+  .flashcard{
+    width:100%; max-width:440px; height:240px; perspective:1200px; cursor:pointer;
+  }
+  .flashcard-inner{
+    position:relative; width:100%; height:100%; text-align:center;
+    transition:transform .5s; transform-style:preserve-3d;
+  }
+  .flashcard.flipped .flashcard-inner{ transform:rotateY(180deg); }
+  .card-face{
+    position:absolute; inset:0; backface-visibility:hidden;
+    display:flex; align-items:center; justify-content:center; padding:24px;
+    border-radius:16px; border:1px solid var(--border); background:var(--panel);
+    font-size:1.05rem; line-height:1.5;
+  }
+  .card-face.back{ transform:rotateY(180deg); background:var(--panel-2); }
+
+  .flashcard-controls{ display:flex; align-items:center; gap:14px; }
+  .flashcard-progress{ font-size:.8rem; color:var(--text-muted); }
+  .know-btn{ background:var(--success); color:#062; border:none; }
+  .review-btn{ background:transparent; color:var(--text-muted); border:1px solid var(--border); }
+  .know-btn, .review-btn{ padding:9px 16px; border-radius:9px; font-size:.8rem; cursor:pointer; font-family:var(--font-body); font-weight:600; }
+
+  .empty-state{ text-align:center; color:var(--text-muted); font-size:.85rem; margin-top:60px; }
+
+  /* ---- Quiz ---- */
+  .quiz-stage{ flex:1; display:flex; flex-direction:column; gap:16px; }
+  .quiz-question{ font-size:1.02rem; font-weight:600; line-height:1.5; }
+  .quiz-options{ display:flex; flex-direction:column; gap:10px; }
+  .quiz-option{
+    text-align:left; padding:12px 14px; border-radius:10px; border:1px solid var(--border);
+    background:var(--panel); color:var(--text); cursor:pointer; font-size:.88rem; font-family:var(--font-body);
+  }
+  .quiz-option:hover{ border-color:var(--accent); }
+  .quiz-option.correct{ border-color:var(--success); background:color-mix(in srgb, var(--success) 15%, var(--panel)); }
+  .quiz-option.incorrect{ border-color:var(--danger); background:color-mix(in srgb, var(--danger) 15%, var(--panel)); }
+  .quiz-option:disabled{ cursor:default; }
+  .quiz-explanation{ font-size:.83rem; color:var(--text-muted); background:var(--panel-2); padding:12px 14px; border-radius:10px; }
+  .quiz-footer{ display:flex; justify-content:space-between; align-items:center; }
+  .quiz-score{ font-size:.8rem; color:var(--text-muted); }
+  .quiz-result{ text-align:center; padding:40px 20px; }
+  .quiz-result .big{ font-size:2.4rem; font-weight:700; font-family:var(--font-display); }
+
+  /* ---- Practice Test ---- */
+  .pt-setup-row{ display:flex; gap:14px; margin:16px 0; }
+  .pt-setup-row .field{ flex:1; }
+  .pt-header{ display:flex; align-items:center; gap:14px; margin-bottom:16px; flex-wrap:wrap; }
+  .pt-timer{
+    font-family:var(--font-display); font-size:1.3rem; font-weight:700;
+    background:var(--panel-2); border:1px solid var(--border); border-radius:10px;
+    padding:6px 14px; font-variant-numeric:tabular-nums;
+  }
+  .pt-timer.pt-timer-low{ color:var(--danger); border-color:var(--danger); }
+  .pt-progress-dots{ display:flex; gap:6px; flex-wrap:wrap; flex:1; }
+  .pt-dot{
+    width:12px; height:12px; border-radius:50%; background:var(--panel-2);
+    border:1px solid var(--border); cursor:pointer; padding:0;
+  }
+  .pt-dot.answered{ background:var(--accent); border-color:var(--accent); }
+  .pt-dot.current{ box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); }
+  .pt-question-card{
+    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+    padding:18px; margin-bottom:16px;
+  }
+  .pt-question-meta{ font-size:.78rem; color:var(--text-muted); margin-bottom:8px; font-weight:600; }
+  .pt-question-text{ font-size:1rem; line-height:1.5; margin-bottom:14px; }
+  .pt-answer-textarea{
+    width:100%; min-height:160px; resize:vertical; font-family:var(--font-body);
+    font-size:.9rem; line-height:1.5; padding:12px;
+  }
+  .pt-nav-row{ display:flex; justify-content:space-between; gap:10px; }
+  .pt-review-card{
+    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+    padding:16px; margin-bottom:12px;
+  }
+  .pt-your-answer{ font-size:.85rem; margin:10px 0; white-space:pre-wrap; color:var(--text-muted); }
+  .pt-your-answer strong{ color:var(--text); }
+
+  /* ---- Progress ---- */
+  .stats-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:14px; }
+  .stat-card{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
+  .stat-card .label{ font-size:.75rem; color:var(--text-muted); margin-bottom:6px; }
+  .stat-card .value{ font-size:1.6rem; font-weight:700; font-family:var(--font-display); }
+  .bar-track{ height:8px; border-radius:6px; background:var(--panel-2); margin-top:10px; overflow:hidden; }
+  .bar-fill{ height:100%; background:var(--accent); border-radius:6px; transition:width .3s ease; }
+
+  .today-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:14px; margin-bottom:14px; }
+  .streak-row{ display:flex; align-items:center; gap:8px; }
+  .streak-flame{ width:22px; height:22px; color:#ff8a3d; fill:#ff8a3d; stroke:#e85d00; }
+  .streak-card .help-desc{ margin-top:8px; }
+  .goal-card .value{ margin-bottom:2px; }
+  .goal-edit{ display:flex; gap:8px; margin-top:12px; }
+  .goal-edit input{ width:70px; }
+  .goal-card .bar-fill.reached{ background:var(--success); }
+
+  .streak-badge{
+    display:flex; align-items:center; gap:6px;
+    background:var(--panel-2); border:1px solid var(--border);
+    padding:0 12px; height:38px; border-radius:20px;
+    color:var(--text); font-weight:700; font-size:.85rem; cursor:pointer; font-family:var(--font-body);
+  }
+  .streak-badge .streak-flame{ width:16px; height:16px; }
+  .streak-badge:hover{ border-color:var(--accent); }
+
+  /* ---- progress extras ---- */
+  .progress-header{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:4px; }
+  .progress-header h2{ margin:0; }
+  .section-block{ margin-top:16px; }
+  .section-block .label{ font-size:.75rem; color:var(--text-muted); margin-bottom:12px; }
+
+  .heatmap-grid{
+    display:grid; grid-auto-flow:column; grid-template-rows:repeat(7, 12px);
+    grid-auto-columns:12px; gap:3px; overflow-x:auto; padding-bottom:4px;
+  }
+  .heat-cell{ width:12px; height:12px; border-radius:3px; background:var(--panel-2); }
+  .heat-cell.empty{ background:transparent; }
+  .heat-cell.level-0{ background:var(--panel-2); }
+  .heat-cell.level-1{ background:color-mix(in srgb, var(--accent) 25%, var(--panel-2)); }
+  .heat-cell.level-2{ background:color-mix(in srgb, var(--accent) 50%, var(--panel-2)); }
+  .heat-cell.level-3{ background:color-mix(in srgb, var(--accent) 75%, var(--panel-2)); }
+  .heat-cell.level-4{ background:var(--accent); }
+  .heatmap-scale{ display:flex; align-items:center; gap:4px; margin-top:10px; font-size:.7rem; color:var(--text-muted); }
+  .heatmap-scale .heat-cell{ width:10px; height:10px; }
+
+  .badges-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(100px,1fr)); gap:12px; }
+  .badge{
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    padding:14px 8px; border-radius:12px; border:1px solid var(--border);
+    background:var(--panel-2); opacity:.35; filter:grayscale(1);
+    text-align:center;
+  }
+  .badge.unlocked{ opacity:1; filter:none; border-color:var(--accent); }
+  .badge .icon{ width:24px; height:24px; color:var(--accent); }
+  .badge-name{ font-size:.7rem; font-weight:600; line-height:1.3; }
+
+  .settings-note{ font-size:.72rem; color:var(--text-muted); margin:-10px 0 16px; line-height:1.4; }
+
+  /* ---- reminder banner ---- */
+  .reminder-banner{
+    display:none; align-items:center; gap:10px;
+    background:var(--panel-2); border:1px solid var(--accent);
+    border-radius:10px; padding:10px 14px; margin-bottom:14px; font-size:.82rem;
+  }
+  .reminder-banner.show{ display:flex; }
+  .reminder-banner .icon{ width:18px; height:18px; color:#ff8a3d; fill:#ff8a3d; stroke:#e85d00; flex-shrink:0; }
+  .reminder-banner span{ flex:1; }
+  .banner-close{ background:transparent; border:none; color:var(--text-muted); cursor:pointer; display:flex; }
+  .banner-close .icon{ width:15px; height:15px; color:var(--text-muted); fill:none; }
+
+  /* ---- printable report ---- */
+  .print-only{ display:none; }
+  @media print{
+    body *{ visibility:hidden; }
+    #printReport, #printReport *{ visibility:visible; }
+    #printReport{
+      display:block; position:absolute; top:0; left:0; width:100%;
+      color:#000; font-family:var(--font-body); padding:20px;
+    }
+    #printReport h1{ font-size:20px; margin-bottom:16px; }
+    #printReport table{ border-collapse:collapse; width:100%; margin:12px 0; }
+    #printReport td{ border:1px solid #999; padding:6px 10px; font-size:13px; }
+  }
+
+  /* ============ SETTINGS MODAL ============ */
+  .overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; z-index:50; padding:20px; }
+  .overlay.open{ display:flex; }
+
+  .modal{ background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:24px; width:360px; max-width:90vw; max-height:85vh; overflow-y:auto; }
+  .modal h3{ margin:0 0 18px; font-size:1.125rem; }
+  .modal .field{ margin-bottom:16px; width:100%; }
+  .modal select{ width:100%; }
+
+  .theme-grid{ display:flex; gap:10px; }
+  .swatch{ width:44px; height:44px; border-radius:10px; cursor:pointer; border:2px solid transparent; position:relative; }
+  .swatch.selected{ border-color:var(--accent); }
+
+  .toggle-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .toggle-row label{ font-size:.85rem; color:var(--text); }
+  .switch{ position:relative; width:42px; height:24px; flex-shrink:0; }
+  .switch input{ opacity:0; width:0; height:0; }
+  .slider-track{ position:absolute; inset:0; background:var(--panel-2); border:1px solid var(--border); border-radius:20px; cursor:pointer; transition:.2s; }
+  .slider-track::before{ content:""; position:absolute; width:16px; height:16px; left:3px; top:2px; background:var(--text-muted); border-radius:50%; transition:.2s; }
+  .switch input:checked + .slider-track{ background:var(--accent); }
+  .switch input:checked + .slider-track::before{ transform:translateX(18px); background:#fff; }
+
+  .contrast-scale{ width:100%; }
+  .contrast-scale input[type="range"]{
+    width:100%; accent-color:var(--accent);
+    background:transparent; padding:0; height:20px;
+  }
+  .contrast-scale-labels{
+    display:flex; justify-content:space-between;
+    font-size:.7rem; color:var(--text-muted); margin-top:2px;
+  }
+  .contrast-scale-labels span{ transition:color .15s ease, font-weight .15s ease; }
+  .contrast-scale-labels span.active{ color:var(--text); font-weight:600; }
+
+  .modal-actions{ display:flex; justify-content:flex-end; margin-top:6px; }
+  .close-btn{ background:var(--accent); color:#fff; border:none; padding:9px 18px; border-radius:9px; font-weight:600; cursor:pointer; }
+
+  /* ---- Settings: grouped sections (proximity + repetition) ---- */
+  .modal-section-title{
+    font-size:.7rem; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--text-muted); margin:0 0 12px; font-weight:600;
+  }
+  .modal-section{ margin-bottom:22px; }
+  .modal-section:last-of-type{ margin-bottom:0; }
+  .modal-divider{ border:none; border-top:1px solid var(--border); margin:20px 0; }
+
+  /* ---- Sidebar collapse ---- */
+  .sidebar{ transition:width .18s ease; position:relative; }
+  .sidebar.collapsed{ width:60px; }
+  .sidebar.collapsed .label, .sidebar.collapsed .side-label{ display:none; }
+  .sidebar.collapsed .sidebtn{ justify-content:center; padding:11px 0; }
+  .sidebar-collapse-btn{
+    position:absolute; top:8px; right:-13px;
+    width:26px; height:26px; border-radius:50%;
+    background:var(--panel-2); border:1px solid var(--border); color:var(--text-muted);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:5;
+  }
+  .sidebar-collapse-btn:hover{ border-color:var(--accent); color:var(--text); }
+  .sidebar-collapse-btn .icon{ width:14px; height:14px; transition:transform .18s ease; }
+  .sidebar.collapsed .sidebar-collapse-btn .icon{ transform:rotate(180deg); }
+
+  /* ---- Session tabs: close button (proximity: action sits right on its own tab) ---- */
+  .session-tab{ display:flex; align-items:center; gap:8px; }
+  .session-tab-close{
+    display:flex; align-items:center; justify-content:center;
+    width:15px; height:15px; border-radius:50%; background:transparent; border:none;
+    color:var(--text-muted); cursor:pointer; flex-shrink:0;
+  }
+  .session-tab-close:hover{ background:var(--danger); color:#fff; }
+  .session-tab-close .icon{ width:10px; height:10px; }
+
+  /* ---- Account list (sign-in modal) ---- */
+  .account-list{ display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
+  .account-list-item{
+    display:flex; align-items:center; gap:10px; width:100%;
+    padding:9px 10px; border-radius:10px; border:1px solid var(--border);
+    background:var(--panel-2); color:var(--text); cursor:pointer;
+    font-family:var(--font-body); font-size:.85rem; text-align:left;
+  }
+  .account-list-item:hover{ border-color:var(--accent); }
+  .account-list-item .avatar-circle{ width:24px; height:24px; font-size:.7rem; }
+  .account-list-item .acc-meta{ font-size:.72rem; color:var(--text-muted); }
+  .auth-divider{
+    display:flex; align-items:center; gap:10px; margin:16px 0;
+    font-size:.72rem; color:var(--text-muted);
+  }
+  .auth-divider::before, .auth-divider::after{ content:""; flex:1; height:1px; background:var(--border); }
+  .auth-switch{ text-align:center; font-size:.8rem; color:var(--text-muted); margin-top:14px; }
+  .auth-switch a{ color:var(--accent); cursor:pointer; text-decoration:none; font-weight:600; }
+  .auth-switch a:hover{ text-decoration:underline; }
+  .field-row{ display:flex; gap:10px; }
+  .field-row .field{ flex:1; }
+
+  /* ---- Topic suggestion chips (flashcards / quiz) ---- */
+  .topic-chips{ display:flex; flex-wrap:wrap; gap:8px; margin:-8px 0 16px; }
+  .topic-chip{
+    padding:6px 12px; border-radius:20px; border:1px solid var(--border);
+    background:var(--panel-2); color:var(--text-muted); font-size:.78rem;
+    cursor:pointer; font-family:var(--font-body);
+  }
+  .topic-chip:hover{ border-color:var(--accent); color:var(--text); }
+
+  @media (max-width: 640px){
+    .sidebar{ width:64px; }
+    .sidebar span.label{ display:none; }
+    .side-label{ display:none; }
+    .message{ max-width:88%; }
+    .sidebar-collapse-btn{ display:none; }
+  }
+
+
+/* ===== StudyFlex-inspired refresh: polished dashboard, readable spacing, soft scrollbars ===== */
+:root{--radius:16px;--font-display:'Sora',system-ui,sans-serif;--font-body:'IBM Plex Sans',system-ui,sans-serif}
+[data-theme="midnight"]{--bg:#080b12;--panel:#101722;--panel-2:#172236;--border:#263247;--text:#f0f4fc;--text-muted:#9aabc2;--accent:#4d8cff;--accent-2:#8f6bff;--ai-bubble:#141f30;--user-bubble:#285bc0;--user-text:#fff}
+html{scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:#34445d transparent}
+*{scrollbar-width:thin;scrollbar-color:#34445d transparent}
+*::-webkit-scrollbar{width:9px;height:9px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background:#34445d;border:2px solid transparent;background-clip:padding-box;border-radius:999px}
+*::-webkit-scrollbar-thumb:hover{background:#4e6790;border:2px solid transparent;background-clip:padding-box}
+body{background:var(--bg);color:var(--text);line-height:1.55;letter-spacing:.005em}
+button,input,select,textarea{font:inherit}
+button{transition:background .18s ease,border-color .18s ease,transform .18s ease,box-shadow .18s ease}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.topbar{min-height:76px;padding:0 26px;background:#101722;border-bottom:1px solid #263247;box-shadow:0 5px 22px #00000012;backdrop-filter:blur(14px)}
+.logo{gap:12px;font-size:1.12rem;font-weight:700;letter-spacing:-.035em}
+.logo-mark{width:39px;height:39px;padding:7px;border-radius:12px;background:#4d8cff;box-shadow:0 5px 18px #4d8cff30}
+.logo-mark .accent-a{fill:#fff}.logo-mark .accent-b{fill:#dbe8ff}
+.topbar-actions{gap:10px}
+.layout{gap:0;min-height:calc(100vh - 76px)}
+.sidebar{width:252px;min-width:252px;padding:26px 16px 22px;background:#101722;border-right:1px solid #263247;gap:7px}
+.side-label{margin:18px 12px 7px;color:#8fa4c0;font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.sidebtn{min-height:46px;padding:11px 14px;border-radius:10px;color:#a9bad0;font-weight:500;gap:12px;transition:all .18s ease}
+.sidebtn .icon{width:19px;height:19px;flex-shrink:0}
+.sidebtn:hover{background:#192438;color:#eef4ff;transform:translateX(2px)}
+.sidebtn.active{background:#1b2a45;color:#5794ff;font-weight:600;box-shadow:inset 3px 0 0 #4d8cff}
+.sidebar-collapse-btn{border-radius:10px}
+.main{width:min(100%,1500px);min-width:0;margin:0 auto;padding:34px clamp(22px,3vw,44px) 46px}
+.view{max-width:1200px;margin:0 auto}
+.view h2{font-size:clamp(1.45rem,2vw,1.9rem);font-weight:700;letter-spacing:-.04em;margin:22px 0 18px}
+.panel-box,.profile,.settings-panel,.tool-panel,.modal,.flashcard-stage,.quiz-stage,.test-stage,.progress-panel{border:1px solid var(--border);border-radius:18px;background:var(--panel);box-shadow:0 10px 28px #0000000a}
+.profile{padding:20px 22px;margin-bottom:24px}
+label,.field label{color:#a7b9d1;font-size:.82rem;font-weight:600;letter-spacing:.015em;margin-bottom:8px}
+input,select,textarea{min-height:44px;border-radius:10px!important;border:1px solid #2a3850!important;background:#0c131f!important;color:var(--text)!important;padding:11px 13px!important;box-shadow:none!important}
+input::placeholder,textarea::placeholder{color:#73859e!important}
+input:hover,select:hover,textarea:hover{border-color:#3b5275!important}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)!important;box-shadow:0 0 0 3px #4d8cff20!important}
+.primary-btn,.send,.signin-btn{background:#4d8cff!important;color:white!important;border:1px solid #4d8cff!important;border-radius:10px!important;font-weight:600;box-shadow:0 5px 14px #4d8cff22}
+.primary-btn:hover,.send:hover,.signin-btn:hover{background:#3979ed!important;box-shadow:0 8px 20px #4d8cff32;transform:translateY(-1px)}
+.ghost-btn,.icon-btn,.streak-badge,.avatar-btn{border:1px solid #29374d!important;background:#151f2e!important;color:#b8c7dc!important;border-radius:10px!important}
+.ghost-btn:hover,.icon-btn:hover,.streak-badge:hover,.avatar-btn:hover{border-color:#4d8cff!important;color:#fff!important;background:#1a2a43!important}
+.chat-toolbar{gap:12px;margin:18px 0 14px;padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:#101722;align-items:center}
+.session-tabs{gap:7px}
+.session-tabs button,.session-tab{border-radius:9px!important}
+#chat{min-height:300px;max-height:calc(100vh - 360px);overflow:auto;padding:22px 18px;margin-bottom:16px;border:1px solid #222f43;border-radius:18px;background:linear-gradient(180deg,#0d131e 0%,#0b1019 100%);scroll-padding-bottom:24px}
+.message{max-width:min(82%,820px);padding:14px 17px;border-radius:16px;line-height:1.72;font-size:.96rem;box-shadow:0 4px 12px #00000010;overflow-wrap:anywhere}
+.message pre{max-width:100%;overflow:auto;border-radius:10px}
+.message p{margin:.45em 0}.message p:first-child{margin-top:0}.message p:last-child{margin-bottom:0}
+.chatbox{position:sticky;bottom:12px;z-index:4;display:flex;gap:9px;align-items:center;padding:10px;border:1px solid #30415b;border-radius:16px;background:#111a28;box-shadow:0 12px 30px #00000045}
+.chatbox input{flex:1;min-width:80px;border-color:transparent!important;background:#111a28!important}
+.chatbox .icon-btn{flex-shrink:0}
+.input-meta{padding:8px 10px;color:#8496b0;font-size:.78rem}
+.topic-chip{border-radius:999px!important;padding:7px 12px!important;border:1px solid var(--border)!important}
+.card,.stat-card,.tool-card,.flashcard,.quiz-card{border:1px solid var(--border);border-radius:16px;background:var(--panel);box-shadow:0 8px 22px #00000012}
+button:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
+.reminder-banner{border:1px solid #35476a;border-radius:12px;background:#14213a;color:#dbe8ff;padding:13px 16px;margin-bottom:18px}
+.empty-state{padding:34px 22px;color:var(--text-muted);line-height:1.7}
+.modal{box-shadow:0 25px 80px #0009}
+hr{border:0;border-top:1px solid var(--border)}
+::selection{background:#4d8cff55;color:#fff}
+@media(max-width:900px){.sidebar{width:214px;min-width:214px}.main{padding:24px 18px 34px}#chat{max-height:calc(100vh - 330px)}}
+@media(max-width:640px){.topbar{padding:0 14px;min-height:64px}.layout{min-height:calc(100vh - 64px)}.sidebar{width:68px;min-width:68px;padding:18px 8px}.sidebtn{justify-content:center;padding:12px 8px}.sidebtn.active{box-shadow:inset 0 -3px 0 #4d8cff}.main{padding:18px 12px 28px}.profile{padding:15px}.chat-toolbar{padding:8px;flex-wrap:wrap}.message{max-width:94%}#chat{padding:14px 10px;max-height:calc(100vh - 300px)}.chatbox{bottom:6px;padding:7px;gap:5px}.chatbox .send{padding:10px!important}.logo{font-size:.98rem}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+
+  .custom-color-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:end}
+  .custom-color-grid label{display:flex;flex-direction:column;gap:7px;font-size:.78rem;color:var(--text-muted)}
+  .custom-color-grid input[type="color"]{width:100%;height:38px;padding:3px;border:1px solid var(--border);border-radius:9px;background:var(--panel-2);cursor:pointer}
+  .custom-color-grid .ghost-btn{grid-column:1/-1;width:100%}
+  @media(max-width:520px){.custom-color-grid{grid-template-columns:1fr 1fr}.custom-color-grid .ghost-btn{grid-column:1/-1}}
+</style>
+</head>
+
+<body data-theme="purple" data-contrast="off">
+
+<div class="topbar">
+  <div class="logo">
+    <svg class="logo-mark" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path class="accent-a" d="M12 4 3 8.5 12 13l9-4.5L12 4z"/>
+      <path class="accent-b" d="M6 10.7v4.3c0 1.4 2.7 3 6 3s6-1.6 6-3v-4.3l-6 3-6-3z"/>
+    </svg>
+    <span data-i18n="appTitle">AI Tutor</span>
+  </div>
+  <div class="topbar-actions">
+    <button class="streak-badge" id="topbarStreak" data-i18n-title="streakTitle" title="Daily streak">
+      <svg class="icon streak-flame" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 17a2.5 2.5 0 0 0 2.5-2.5c0-1.5-1.5-2-1-3.5-1.5.5-3 2-3 3.5z"/><path d="M12 2c-2 5-6 6-6 11a6 6 0 0 0 6 6 6 6 0 0 0 6-6c0-1-.5-2-1-3-.5 1.5-1.5 2-2 1 1-3-1-6-3-9z"/></svg>
+      <span id="topbarStreakValue">0</span>
+    </button>
+    <button class="icon-btn" id="helpBtn" aria-label="Help" data-i18n-title="helpBtn" title="Help">
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.8 1c0 1.7-2.3 2-2.3 3.5"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </button>
+    <button class="icon-btn" id="settingsBtn" aria-label="Settings" data-i18n-title="settingsBtn" title="Settings">
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1z"/></svg>
+    </button>
+    <div style="position:relative;">
+      <button class="signin-btn" id="signInBtn">
+        <svg class="icon" viewBox="0 0 24 24" stroke="#fff"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        <span data-i18n="signInBtn">Sign in</span>
+      </button>
+      <button class="avatar-btn" id="avatarBtn" style="display:none">
+        <span class="avatar-circle" id="avatarInitial"></span>
+        <span id="avatarName"></span>
+      </button>
+      <div class="account-menu" id="accountMenu">
+        <button class="account-menu-item" id="signOutBtn">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span data-i18n="signOutBtn">Sign out</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+
+  <div class="sidebar" id="sidebar">
+    <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" aria-label="Collapse sidebar" title="Collapse sidebar">
+      <svg class="icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="side-label" data-i18n="sectionLearn">Learn</div>
+    <button class="sidebtn active" data-mode="Tutor" onclick="setMode('Tutor', this)">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      <span class="label" data-i18n="navTutor">Teaching</span>
+    </button>
+    <button class="sidebtn" data-mode="Questions" onclick="setMode('Questions', this)">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      <span class="label" data-i18n="navQuestions">Questions</span>
+    </button>
+    <button class="sidebtn" data-mode="Examples" onclick="setMode('Examples', this)">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      <span class="label" data-i18n="navExamples">Examples</span>
+    </button>
+    <button class="sidebtn" data-mode="Exam Prep" onclick="setMode('Exam Prep', this)">
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M9 13.5 7 22l5-3 5 3-2-8.5"/></svg>
+      <span class="label" data-i18n="navExamPrep">Exam Prep</span>
+    </button>
+
+    <div class="side-label" data-i18n="sectionOther">Other</div>
+    <button class="sidebtn" data-mode="Misc" onclick="setMode('Misc', this)">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="8" y1="10" x2="8.01" y2="10"/><line x1="12" y1="10" x2="12.01" y2="10"/><line x1="16" y1="10" x2="16.01" y2="10"/></svg>
+      <span class="label" data-i18n="navMisc">Chat about anything</span>
+    </button>
+
+    <div class="side-label" data-i18n="sectionTools">Study Tools</div>
+    <button class="sidebtn" data-view="flashcards" onclick="setView('flashcards', this)">
+      <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="6" width="15" height="12" rx="2"/><path d="M7 3h13a2 2 0 0 1 2 2v10"/></svg>
+      <span class="label" data-i18n="navFlashcards">Flashcards</span>
+    </button>
+    <button class="sidebtn" data-view="quiz" onclick="setView('quiz', this)">
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.8 1c0 1.7-2.3 2-2.3 3.5"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span class="label" data-i18n="navQuiz">Quiz</span>
+    </button>
+    <button class="sidebtn" data-view="practicetest" onclick="setView('practicetest', this)">
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/></svg>
+      <span class="label" data-i18n="navPracticeTest">Practice Test</span>
+    </button>
+    <button class="sidebtn" data-view="progress" onclick="setView('progress', this)">
+      <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span class="label" data-i18n="navProgress">Progress</span>
+    </button>
+  </div>
+
+  <div class="main">
+
+    <!-- ===== CHAT VIEW ===== -->
+    <div class="view active" id="view-chat">
+
+      <div class="reminder-banner" id="reminderBanner">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 17a2.5 2.5 0 0 0 2.5-2.5c0-1.5-1.5-2-1-3.5-1.5.5-3 2-3 3.5z"/><path d="M12 2c-2 5-6 6-6 11a6 6 0 0 0 6 6 6 6 0 0 0 6-6c0-1-.5-2-1-3-.5 1.5-1.5 2-2 1 1-3-1-6-3-9z"/></svg>
+        <span data-i18n="reminderBannerText">You haven't studied today yet — keep your streak alive!</span>
+        <button class="banner-close" id="reminderBannerClose" aria-label="Dismiss">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="profile panel-box">
+        <div class="field search-wrap">
+          <label data-i18n="searchLabel">Year & Class</label>
+          <div class="search-row">
+            <input id="profileSearch" type="text" autocomplete="off" data-i18n-placeholder="searchPlaceholder" placeholder="Search e.g. Year 10 Physics...">
+            <button class="ghost-btn anytopic-btn" id="anyTopicBtn" type="button" data-i18n="anyTopicBtn" data-i18n-title="anyTopicTitle" title="Ask about anything, no fixed subject">Any topic</button>
+          </div>
+          <div class="suggestions" id="suggestions"></div>
+          <div class="search-current" id="searchCurrent"></div>
+        </div>
+      </div>
+
+      <h2 id="modeTitle" data-i18n="modeTeaching">Teaching Mode</h2>
+
+      <div class="chat-toolbar">
+        <div class="session-tabs" id="sessionTabs"></div>
+        <div class="toolbar-actions">
+          <button class="icon-btn small" id="newChatBtn" data-i18n-title="newChatBtn" title="New chat">
+            <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <button class="icon-btn small" id="regenBtn" data-i18n-title="regenBtn" title="Regenerate last response" disabled>
+            <svg class="icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          </button>
+          <button class="icon-btn small" id="exportChatBtn" data-i18n-title="exportBtn" title="Export">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
+          <button class="icon-btn small" id="clearChatBtn" data-i18n-title="clearBtn" title="Clear">
+            <svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="chat"></div>
+
+      <div class="attachment-chip" id="attachmentChip" style="display:none;"></div>
+      <div class="chatbox">
+        <button class="icon-btn" id="attachBtn" type="button" data-i18n-title="attachFileTitle" title="Attach a file">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        </button>
+        <input type="file" id="fileInput" accept=".txt,.md,.markdown,.csv,.json,.log" style="display:none;">
+        <select id="depthQuickSelect" class="depth-select" data-i18n-title="responseDepthLabel" title="Response depth"></select>
+        <input id="message" data-i18n-placeholder="inputPlaceholder" placeholder="Ask your tutor anything...">
+        <button class="send" id="sendBtn" onclick="sendMessage()">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          <span data-i18n="sendBtn">Send</span>
+        </button>
+      </div>
+      <div class="input-meta" id="inputMeta"></div>
+
+    </div>
+
+    <!-- ===== FLASHCARDS VIEW ===== -->
+    <div class="view" id="view-flashcards">
+      <h2 data-i18n="flashcardsTitle">Flashcards</h2>
+      <div class="tool-topbar">
+        <input id="flashcardTopic" data-i18n-placeholder="flashcardsTopicPlaceholder" placeholder="Topic, e.g. Quadratic equations">
+        <button class="primary-btn" id="genFlashcardsBtn" data-i18n="generateBtn">Generate</button>
+      </div>
+      <div class="topic-chips" id="flashcardChips"></div>
+      <div class="flashcard-stage" id="flashcardStage">
+        <div class="empty-state" data-i18n="flashcardsEmpty">Enter a topic above to generate a set of flashcards.</div>
+      </div>
+    </div>
+
+    <!-- ===== QUIZ VIEW ===== -->
+    <div class="view" id="view-quiz">
+      <h2 data-i18n="quizTitle">Quiz</h2>
+      <div class="tool-topbar">
+        <input id="quizTopic" data-i18n-placeholder="quizTopicPlaceholder" placeholder="Topic, e.g. Cell biology">
+        <button class="primary-btn" id="genQuizBtn" data-i18n="generateBtn">Generate</button>
+      </div>
+      <div class="topic-chips" id="quizChips"></div>
+      <div class="quiz-stage" id="quizStage">
+        <div class="empty-state" data-i18n="quizEmpty">Enter a topic above to generate a 5-question quiz.</div>
+      </div>
+    </div>
+
+    <!-- ===== PRACTICE TEST VIEW ===== -->
+    <div class="view" id="view-practicetest">
+      <h2 data-i18n="practiceTestTitle">Practice Test</h2>
+
+      <div id="ptSetup">
+        <div class="tool-topbar">
+          <input id="ptTopic" data-i18n-placeholder="ptTopicPlaceholder" placeholder="Topic, e.g. Forces and motion">
+        </div>
+        <div class="topic-chips" id="ptChips"></div>
+        <div class="pt-setup-row">
+          <div class="field">
+            <label data-i18n="ptDurationLabel">Time limit</label>
+            <select id="ptDuration"></select>
+          </div>
+          <div class="field">
+            <label data-i18n="ptNumQuestionsLabel">Number of questions</label>
+            <select id="ptNumQuestions">
+              <option value="3">3</option>
+              <option value="5" selected>5</option>
+              <option value="8">8</option>
+            </select>
+          </div>
+        </div>
+        <p class="settings-note" data-i18n="ptSetupNote">Once you start, a timer runs and your answers are graded by the AI at the end — just like a real exam sitting.</p>
+        <button class="primary-btn" id="ptStartBtn" data-i18n="ptStartBtn">Start test</button>
+      </div>
+
+      <div id="ptActive" style="display:none;">
+        <div class="pt-header">
+          <div class="pt-timer" id="ptTimer">20:00</div>
+          <div class="pt-progress-dots" id="ptDots"></div>
+          <button class="ghost-btn" id="ptSubmitBtn" data-i18n="ptSubmitBtn">Submit test</button>
+        </div>
+        <div class="pt-question-card">
+          <div class="pt-question-meta" id="ptQuestionMeta"></div>
+          <div class="pt-question-text" id="ptQuestionText"></div>
+          <textarea id="ptAnswerInput" class="pt-answer-textarea" data-i18n-placeholder="ptYourAnswerPlaceholder" placeholder="Write your answer here..."></textarea>
+        </div>
+        <div class="pt-nav-row">
+          <button class="ghost-btn" id="ptPrevBtn" data-i18n="ptPrevBtn">Previous</button>
+          <button class="primary-btn" id="ptNextBtn" data-i18n="ptNextBtn">Next</button>
+        </div>
+      </div>
+
+      <div id="ptResults" style="display:none;"></div>
+    </div>
+
+    <!-- ===== PROGRESS VIEW ===== -->
+    <div class="view" id="view-progress">
+      <div class="progress-header">
+        <h2 data-i18n="progressTitle">Your Progress</h2>
+        <button class="ghost-btn" id="printReportBtn">
+          <svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px;margin-right:6px;vertical-align:-2px;"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          <span data-i18n="printReportBtn">Print weekly report</span>
+        </button>
+      </div>
+
+      <div class="today-grid">
+        <div class="stat-card streak-card">
+          <div class="label" data-i18n="streakTitle">Daily streak</div>
+          <div class="streak-row">
+            <svg class="icon streak-flame" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 17a2.5 2.5 0 0 0 2.5-2.5c0-1.5-1.5-2-1-3.5-1.5.5-3 2-3 3.5z"/><path d="M12 2c-2 5-6 6-6 11a6 6 0 0 0 6 6 6 6 0 0 0 6-6c0-1-.5-2-1-3-.5 1.5-1.5 2-2 1 1-3-1-6-3-9z"/></svg>
+            <span class="value" id="streakValue">0</span>
+          </div>
+          <div class="help-desc" id="streakSubtext" data-i18n="streakNote">Do something in the tutor each day to keep it going.</div>
+        </div>
+
+        <div class="stat-card goal-card">
+          <div class="label" data-i18n="goalTitle">Today's goal</div>
+          <div class="value" id="goalValue">0 / 10</div>
+          <div class="bar-track"><div class="bar-fill" id="barGoal" style="width:0%"></div></div>
+          <div class="goal-edit">
+            <input type="number" id="goalInput" min="1" max="100" value="10">
+            <button class="ghost-btn" id="setGoalBtn" data-i18n="setGoalBtn">Set</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="label" data-i18n="statsMessages">Messages sent</div>
+          <div class="value" id="statMessages">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="label" data-i18n="statsFlashcards">Flashcards known</div>
+          <div class="value" id="statFlashcards">0 / 0</div>
+          <div class="bar-track"><div class="bar-fill" id="barFlashcards" style="width:0%"></div></div>
+        </div>
+        <div class="stat-card">
+          <div class="label" data-i18n="statsQuizzes">Quizzes taken</div>
+          <div class="value" id="statQuizzes">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="label" data-i18n="statsAccuracy">Quiz accuracy</div>
+          <div class="value" id="statAccuracy">—</div>
+          <div class="bar-track"><div class="bar-fill" id="barAccuracy" style="width:0%"></div></div>
+        </div>
+        <div class="stat-card">
+          <div class="label" data-i18n="statsPracticeTests">Practice tests taken</div>
+          <div class="value" id="statPracticeTests">0</div>
+        </div>
+      </div>
+
+      <div class="panel-box section-block">
+        <div class="label" data-i18n="heatmapTitle">Activity over the last 12 weeks</div>
+        <div class="heatmap-grid" id="heatmapGrid"></div>
+        <div class="heatmap-scale">
+          <span data-i18n="heatmapLess">Less</span>
+          <span class="heat-cell level-0"></span><span class="heat-cell level-1"></span>
+          <span class="heat-cell level-2"></span><span class="heat-cell level-3"></span><span class="heat-cell level-4"></span>
+          <span data-i18n="heatmapMore">More</span>
+        </div>
+      </div>
+
+      <div class="panel-box section-block">
+        <div class="label" data-i18n="badgesTitle">Achievements</div>
+        <div class="badges-grid" id="badgesGrid"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Printable weekly report (hidden on screen, shown when printing) -->
+<div id="printReport" class="print-only">
+  <h1 data-i18n="reportTitle">Weekly Progress Report</h1>
+  <p><strong data-i18n="reportStudentLabel">Student:</strong> <span id="reportStudent"></span></p>
+  <p><strong data-i18n="reportRangeLabel">Week:</strong> <span id="reportRange"></span></p>
+  <table>
+    <tr><td data-i18n="reportActionsLabel">Study actions this week</td><td id="reportActions"></td></tr>
+    <tr><td data-i18n="statsMessages">Messages sent</td><td id="reportMessages"></td></tr>
+    <tr><td data-i18n="statsFlashcards">Flashcards known</td><td id="reportFlashcards"></td></tr>
+    <tr><td data-i18n="statsQuizzes">Quizzes taken</td><td id="reportQuizzes"></td></tr>
+    <tr><td data-i18n="streakTitle">Daily streak</td><td id="reportStreak"></td></tr>
+  </table>
+  <p><strong data-i18n="badgesTitle">Achievements</strong>: <span id="reportBadges"></span></p>
+</div>
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3 data-i18n="settingsTitle">Settings</h3>
+
+    <div class="modal-section">
+      <div class="modal-section-title" data-i18n="sectionAppearance">Appearance</div>
+      <div class="field">
+        <label data-i18n="themeLabel">Theme</label>
+        <div class="theme-grid" id="themeGrid">
+          <div class="swatch" data-theme="midnight" style="background:linear-gradient(135deg,#0c0e14,#5b7fff)" title="Midnight"></div>
+          <div class="swatch" data-theme="parchment" style="background:linear-gradient(135deg,#f6f2ea,#a05a2c)" title="Parchment"></div>
+          <div class="swatch" data-theme="forest" style="background:linear-gradient(135deg,#0e1712,#3ea373)" title="Forest"></div>
+          <div class="swatch" data-theme="dusk" style="background:linear-gradient(135deg,#151119,#d97757)" title="Dusk"></div>
+          <div class="swatch" data-theme="purple" style="background:linear-gradient(135deg,#100b1c,#a879ff)" title="Purple"></div>
+        </div>
+      </div>
+      <div class="field custom-theme-fields">
+        <label>Custom theme</label>
+        <p class="settings-note" style="margin:0 0 10px;">Make your own color combination. Choose a background, panel, and accent color.</p>
+        <div class="custom-color-grid">
+          <label for="customBgColor">Background <input type="color" id="customBgColor" value="#100b1c" aria-label="Custom background color"></label>
+          <label for="customPanelColor">Cards & panels <input type="color" id="customPanelColor" value="#191229" aria-label="Custom card and panel color"></label>
+          <label for="customAccentColor">Accent <input type="color" id="customAccentColor" value="#a879ff" aria-label="Custom accent color"></label>
+          <button type="button" class="ghost-btn" id="applyCustomTheme">Use custom theme</button>
+        </div>
+      </div>
+      <div class="field">
+        <label data-i18n="languageLabel">Language</label>
+        <select id="languageSelect">
+          <option value="en">English</option>
+          <option value="es">Español</option>
+          <option value="fr">Français</option>
+          <option value="de">Deutsch</option>
+          <option value="ja">日本語</option>
+          <option value="zh">中文</option>
+        </select>
+      </div>
+    </div>
+
+    <hr class="modal-divider">
+
+    <div class="modal-section">
+      <div class="modal-section-title" data-i18n="sectionAiBehavior">AI Behaviour</div>
+      <div class="toggle-row" style="margin-bottom:8px;">
+        <label data-i18n="autoSpeakLabel">Auto-read replies aloud</label>
+        <label class="switch">
+          <input type="checkbox" id="autoSpeakToggle">
+          <span class="slider-track"></span>
+        </label>
+      </div>
+      <p class="settings-note" style="margin:0;" data-i18n="depthMovedNote">Tip: the response depth (Low / Medium / High / Thinker) is now next to the message box, so you can change it per question.</p>
+    </div>
+
+    <hr class="modal-divider">
+
+    <div class="modal-section">
+      <div class="modal-section-title" data-i18n="sectionAccessibility">Accessibility</div>
+      <div class="field">
+        <label data-i18n="fontLabel">Font</label>
+        <select id="fontSelect">
+          <option value="standard" data-i18n="fontStandard">Standard</option>
+          <option value="dyslexic" data-i18n="fontDyslexic">Dyslexia-friendly (OpenDyslexic)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label data-i18n="fontSizeLabel">Text size</label>
+        <select id="fontSizeSelect">
+          <option value="small" data-i18n="fontSmall">Small</option>
+          <option value="medium" data-i18n="fontMedium" selected>Medium</option>
+          <option value="large" data-i18n="fontLarge">Large</option>
+        </select>
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label data-i18n="highContrastLabel">Contrast</label>
+        <div class="contrast-scale">
+          <input type="range" id="contrastSlider" min="0" max="2" step="1" value="0">
+          <div class="contrast-scale-labels">
+            <span data-i18n="contrastOff" data-level="0">Standard</span>
+            <span data-i18n="contrastMedium" data-level="1">Medium</span>
+            <span data-i18n="contrastHigh" data-level="2">High</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="modal-divider">
+
+    <div class="modal-section">
+      <div class="modal-section-title" data-i18n="sectionChat">Chat</div>
+      <div class="field">
+        <label data-i18n="messageDensityLabel">Message spacing</label>
+        <select id="densitySelect">
+          <option value="comfortable" data-i18n="densityComfortable">Comfortable</option>
+          <option value="compact" data-i18n="densityCompact">Compact</option>
+        </select>
+      </div>
+      <div class="toggle-row" style="margin-bottom:8px;">
+        <label data-i18n="timestampsLabel">Show message times</label>
+        <label class="switch">
+          <input type="checkbox" id="timestampsToggle">
+          <span class="slider-track"></span>
+        </label>
+      </div>
+      <div class="toggle-row" style="margin-bottom:0;">
+        <label data-i18n="soundEffectsLabel">Sound effects</label>
+        <label class="switch">
+          <input type="checkbox" id="soundEffectsToggle">
+          <span class="slider-track"></span>
+        </label>
+      </div>
+    </div>
+
+    <hr class="modal-divider">
+
+    <div class="modal-section">
+      <div class="modal-section-title" data-i18n="sectionNotifications">Notifications</div>
+      <div class="toggle-row" style="margin-bottom:8px;">
+        <label data-i18n="remindersLabel">Study reminders</label>
+        <label class="switch">
+          <input type="checkbox" id="remindersToggle">
+          <span class="slider-track"></span>
+        </label>
+      </div>
+      <p class="settings-note" style="margin:0;" data-i18n="remindersNote">Nudges you if you haven't studied yet today. Needs this tab to stay open and browser notification permission.</p>
+    </div>
+
+    <hr class="modal-divider">
+
+    <div class="modal-section">
+      <div class="modal-section-title" data-i18n="sectionData">Data</div>
+      <div class="field" style="flex-direction:row; gap:10px;">
+        <button class="ghost-btn" id="exportDataBtn" data-i18n="exportDataBtn">Export my data</button>
+        <button class="ghost-btn" id="resetProgressBtn" style="color:var(--danger); border-color:var(--danger);" data-i18n="resetProgressBtn">Reset progress</button>
+      </div>
+      <p class="settings-note" style="margin:8px 0 0;" data-i18n="dataNote">Export downloads a backup of your streak, goals and stats as a file. Reset clears that history on this device — your account and chats stay.</p>
+    </div>
+
+    <div class="modal-actions">
+      <button class="close-btn" id="closeSettings" data-i18n="doneBtn">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sign in modal -->
+<div class="overlay" id="signInOverlay">
+  <div class="modal">
+    <h3 data-i18n="signInTitle">Sign in</h3>
+    <p style="font-size:.8rem; color:var(--text-muted); margin-top:-8px; margin-bottom:16px;" data-i18n="signInNote">Local only — just personalizes your session, nothing is sent anywhere.</p>
+
+    <div class="account-list" id="accountList"></div>
+    <p class="settings-note" id="noAccountsNote" style="margin:0 0 16px;" data-i18n="noAccountsNote">No saved accounts on this device yet.</p>
+
+    <div class="auth-divider" id="authDivider" data-i18n="orDivider">or</div>
+
+    <div class="field">
+      <label data-i18n="guestNameLabel">Continue as guest</label>
+      <input id="signInName" type="text" data-i18n-placeholder="namePlaceholder" placeholder="e.g. Alex" autocomplete="off">
+    </div>
+    <div class="modal-actions">
+      <button class="close-btn" id="confirmSignIn" data-i18n="continueBtn">Continue</button>
+    </div>
+    <div class="auth-switch">
+      <span data-i18n="noAccountYet">Don't have an account?</span>
+      <a id="openCreateAccount" data-i18n="createAccountLink">Create one</a>
+    </div>
+  </div>
+</div>
+
+<!-- Create account modal -->
+<div class="overlay" id="createAccountOverlay">
+  <div class="modal">
+    <h3 data-i18n="createAccountTitle">Create account</h3>
+    <p style="font-size:.8rem; color:var(--text-muted); margin-top:-8px; margin-bottom:16px;" data-i18n="signInNote">Local only — just personalizes your session, nothing is sent anywhere.</p>
+    <div class="field">
+      <label data-i18n="nameLabel">Your name</label>
+      <input id="createAccountName" type="text" data-i18n-placeholder="namePlaceholder" placeholder="e.g. Alex" autocomplete="off">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label data-i18n="searchLabelYear">Year</label>
+        <select id="createAccountYear"></select>
+      </div>
+      <div class="field">
+        <label data-i18n="searchLabelClass">Class</label>
+        <select id="createAccountClass"></select>
+      </div>
+    </div>
+    <p class="settings-note" id="createAccountError" style="display:none; color:var(--danger);"></p>
+    <div class="modal-actions">
+      <button class="close-btn" id="confirmCreateAccount" data-i18n="createAccountBtn">Create account</button>
+    </div>
+    <div class="auth-switch">
+      <span data-i18n="haveAccountAlready">Already have an account?</span>
+      <a id="openSignIn" data-i18n="signInLink">Sign in</a>
+    </div>
+  </div>
+</div>
+
+<!-- Help modal -->
+<div class="overlay" id="helpOverlay">
+  <div class="modal">
+    <h3 data-i18n="helpTitle">Quick guide</h3>
+    <div class="help-list">
+      <div class="help-item">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <div><div class="help-title" data-i18n="helpLearnTitle">Learn modes</div><div class="help-desc" data-i18n="helpLearnDesc">Teaching, Questions, Examples and Exam Prep are different chat styles — pick one, set your year and class, and start asking.</div></div>
+      </div>
+      <div class="help-item">
+        <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="6" width="15" height="12" rx="2"/><path d="M7 3h13a2 2 0 0 1 2 2v10"/></svg>
+        <div><div class="help-title" data-i18n="helpToolsTitle">Study tools</div><div class="help-desc" data-i18n="helpToolsDesc">Flashcards and Quiz generate practice material on any topic you type in. Progress tracks how you're doing this session.</div></div>
+      </div>
+      <div class="help-item">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1z"/></svg>
+        <div><div class="help-title" data-i18n="helpSettingsTitle">Settings</div><div class="help-desc" data-i18n="helpSettingsDesc">Change color theme, language, font, text size, high contrast and auto-read from the gear icon.</div></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="close-btn" id="closeHelp" data-i18n="doneBtn">Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+
+// ==== Local Ollama server (run `node server.js` in this folder) ====
+const LOCAL_API_URL = "http://localhost:3000/api/chat";
+
+// ============ TRANSLATIONS ============
+const I18N = {
+  en:{ appTitle:"AI Tutor", navTutor:"Teaching", navQuestions:"Questions", navExamples:"Examples", navExamPrep:"Exam Prep", navMisc:"Chat about anything",
+    sectionLearn:"Learn", sectionTools:"Study Tools", sectionOther:"Other", navFlashcards:"Flashcards", navQuiz:"Quiz", navProgress:"Progress",
+    searchLabel:"Year & Class", searchPlaceholder:"Search e.g. Year 10 Physics...", anyTopicBtn:"Any topic", anyTopicTitle:"Ask about anything, no fixed subject",
+    modeTeaching:"Teaching Mode", modeQuestions:"Questions Mode", modeExamples:"Examples Mode", modeExamPrep:"Exam Prep Mode", modeMisc:"Open Chat",
+    welcomeMessage:"Hello! I'm your AI Tutor. Tell me what you'd like to learn — I can help with maths, science, English, and QCAA exam prep.",
+    inputPlaceholder:"Ask your tutor anything...", sendBtn:"Send", thinking:"Thinking",
+    settingsTitle:"Settings", themeLabel:"Theme", languageLabel:"Language", doneBtn:"Done",
+    fontLabel:"Font", fontStandard:"Standard", fontDyslexic:"Dyslexia-friendly (OpenDyslexic)",
+    fontSizeLabel:"Text size", fontSmall:"Small", fontMedium:"Medium", fontLarge:"Large",
+    highContrastLabel:"Contrast", contrastOff:"Standard", contrastMedium:"Medium", contrastHigh:"High",
+    autoSpeakLabel:"Auto-read replies aloud",
+    currentSelection:"Studying", errorMsg:"Error connecting to the local AI server",
+    responseDepthLabel:"Response depth",
+    depthLow:"Low — short & to the point", depthMedium:"Medium — balanced",
+    depthHigh:"High — detailed & thorough", depthThinker:"Thinker — reasons step-by-step (slower)",
+    depthLowShort:"Low", depthMediumShort:"Medium", depthHighShort:"High", depthThinkerShort:"Thinker",
+    depthMovedNote:"Tip: the response depth (Low / Medium / High / Thinker) is now next to the message box, so you can change it per question.",
+    sectionChat:"Chat", messageDensityLabel:"Message spacing", densityComfortable:"Comfortable", densityCompact:"Compact",
+    timestampsLabel:"Show message times", soundEffectsLabel:"Sound effects",
+    sectionData:"Data", exportDataBtn:"Export my data", resetProgressBtn:"Reset progress",
+    dataNote:"Export downloads a backup of your streak, goals and stats as a file. Reset clears that history on this device — your account and chats stay.",
+    resetConfirm:"Reset all progress, streak, and achievement data on this device? This can't be undone.",
+    attachFileTitle:"Attach a file", attachedFileLabel:"Attached",
+    unsupportedFileType:"Only text-based files (.txt, .md, .csv, .json, .log) are supported — the local AI model can't read images, PDFs, or Word docs.",
+    fileTooLarge:"That file is too large to attach — please keep it under 200MB.",
+    fileReadError:"Couldn't read that file.",
+    stopBtn:"Stop", regenBtn:"Regenerate last response", copyBtn:"Copy", copiedBtn:"Copied!",
+    stoppedMsg:"Stopped.",
+    helpBtn:"Help", settingsBtn:"Settings", signInBtn:"Sign in", signOutBtn:"Sign out",
+    sectionAppearance:"Appearance", sectionAiBehavior:"AI Behaviour", sectionAccessibility:"Accessibility", sectionNotifications:"Notifications",
+    noAccountsNote:"No saved accounts on this device yet.", orDivider:"or",
+    guestNameLabel:"Continue as guest", continueBtn:"Continue",
+    noAccountYet:"Don't have an account?", createAccountLink:"Create one",
+    createAccountTitle:"Create account", createAccountBtn:"Create account",
+    haveAccountAlready:"Already have an account?", signInLink:"Sign in",
+    searchLabelYear:"Year", searchLabelClass:"Class",
+    accountExistsError:"An account with that name already exists on this device — try signing in instead.",
+    accountNameRequired:"Please enter a name.",
+    switchAccountBtn:"Switch account",
+    signInTitle:"Sign in", signInNote:"Local only — just personalizes your session, nothing is sent anywhere.",
+    nameLabel:"Your name", namePlaceholder:"e.g. Alex",
+    helpTitle:"Quick guide", helpLearnTitle:"Learn modes",
+    helpLearnDesc:"Teaching, Questions, Examples and Exam Prep are different chat styles — pick one, set your year and class, and start asking.",
+    helpToolsTitle:"Study tools", helpToolsDesc:"Flashcards and Quiz generate practice material on any topic you type in. Progress tracks how you're doing this session.",
+    helpSettingsTitle:"Settings", helpSettingsDesc:"Change color theme, language, font, text size, high contrast and auto-read from the gear icon.",
+    newChatBtn:"New chat", exportBtn:"Export", clearBtn:"Clear",
+    clearConfirm:"Clear this chat? This can't be undone.",
+    sessionName:"Chat", flashcardsTitle:"Flashcards", flashcardsTopicPlaceholder:"Topic, e.g. Quadratic equations",
+    generateBtn:"Generate", generatingText:"Generating...", flashcardsEmpty:"Enter a topic above to generate a set of flashcards.",
+    flashcardsError:"Couldn't generate flashcards. Try again.", knowBtn:"I know this", reviewBtn:"Still learning",
+    cardOf:"Card {n} of {total}", quizTitle:"Quiz", quizTopicPlaceholder:"Topic, e.g. Cell biology",
+    quizEmpty:"Enter a topic above to generate a 5-question quiz.", quizError:"Couldn't generate the quiz. Try again.",
+    nextBtn:"Next", questionOf:"Question {n} of {total}", quizResultTitle:"Quiz complete!",
+    quizResultScore:"You scored {score} out of {total}", tryAnotherBtn:"Try another quiz",
+    progressTitle:"Your Progress", statsMessages:"Messages sent", statsFlashcards:"Flashcards known",
+    statsQuizzes:"Quizzes taken", statsAccuracy:"Quiz accuracy",
+    streakTitle:"Daily streak", streakNote:"Do something in the tutor each day to keep it going.",
+    goalTitle:"Today's goal", setGoalBtn:"Set",
+    heatmapTitle:"Activity over the last 12 weeks", heatmapLess:"Less", heatmapMore:"More",
+    badgesTitle:"Achievements",
+    badge_first_steps:"First Steps", badge_first_steps_desc:"Send your first message to the tutor.",
+    badge_quiz_whiz:"Quiz Whiz", badge_quiz_whiz_desc:"Complete 5 quizzes.",
+    badge_card_master:"Card Master", badge_card_master_desc:"Mark 25 flashcards as known.",
+    badge_on_fire:"On Fire", badge_on_fire_desc:"Reach a 3-day streak.",
+    badge_unstoppable:"Unstoppable", badge_unstoppable_desc:"Reach a 7-day streak.",
+    badge_perfect_score:"Perfect Score", badge_perfect_score_desc:"Get 100% on a quiz.",
+    badge_goal_getter:"Goal Getter", badge_goal_getter_desc:"Reach your daily goal 5 times.",
+    printReportBtn:"Print weekly report", reportTitle:"Weekly Progress Report",
+    reportStudentLabel:"Student", reportRangeLabel:"Week", reportActionsLabel:"Study actions this week",
+    remindersLabel:"Study reminders",
+    remindersNote:"Nudges you if you haven't studied yet today. Needs this tab to stay open and browser notification permission.",
+    navPracticeTest:"Practice Test", practiceTestTitle:"Practice Test",
+    ptTopicPlaceholder:"Topic, e.g. Forces and motion", ptDurationLabel:"Time limit", ptNumQuestionsLabel:"Number of questions",
+    ptSetupNote:"Once you start, a timer runs and your answers are graded by the AI at the end — just like a real exam sitting.",
+    ptStartBtn:"Start test", ptSubmitBtn:"Submit test", ptPrevBtn:"Previous", ptNextBtn:"Next",
+    ptYourAnswerPlaceholder:"Write your answer here...", ptSubmitConfirm:"Submit your test now? You won't be able to change your answers after this.",
+    ptGradingText:"Grading your answers...", ptOverallScoreLabel:"Overall score", ptRetakeBtn:"Take another test",
+    ptError:"Couldn't generate or grade the test. Try again.", ptAutoSubmitNotice:"Time's up — your test was submitted automatically.",
+    ptLeaveConfirm:"You're in the middle of a timed test — the clock keeps running if you leave. Continue anyway?",
+    yourAnswerLabel:"Your answer", statsPracticeTests:"Practice tests taken", minutesAbbrev:"min",
+    badge_test_ready:"Test Ready", badge_test_ready_desc:"Complete your first practice test.",
+    reminderBannerText:"You haven't studied today yet — keep your streak alive!",
+    reminderNotifTitle:"Time to study!", reminderNotifBody:"You haven't studied today yet — keep your streak alive." },
+
+  es:{ appTitle:"Tutor IA", navTutor:"Enseñanza", navQuestions:"Preguntas", navExamples:"Ejemplos", navExamPrep:"Prep. Examen", navMisc:"Hablar de cualquier cosa",
+    sectionLearn:"Aprender", sectionTools:"Herramientas", sectionOther:"Otro", navFlashcards:"Tarjetas", navQuiz:"Cuestionario", navProgress:"Progreso",
+    searchLabel:"Curso y asignatura", searchPlaceholder:"Busca ej. Year 10 Physics...", anyTopicBtn:"Cualquier tema", anyTopicTitle:"Pregunta lo que quieras, sin materia fija",
+    modeTeaching:"Modo Enseñanza", modeQuestions:"Modo Preguntas", modeExamples:"Modo Ejemplos", modeExamPrep:"Modo Prep. Examen", modeMisc:"Charla libre",
+    welcomeMessage:"¡Hola! Soy tu tutor de IA. Dime qué quieres aprender: puedo ayudarte con matemáticas, ciencias, inglés y preparación para exámenes QCAA.",
+    inputPlaceholder:"Pregúntale algo a tu tutor...", sendBtn:"Enviar", thinking:"Pensando",
+    settingsTitle:"Configuración", themeLabel:"Tema", languageLabel:"Idioma", doneBtn:"Listo",
+    fontLabel:"Fuente", fontStandard:"Estándar", fontDyslexic:"Apta para dislexia (OpenDyslexic)",
+    fontSizeLabel:"Tamaño de texto", fontSmall:"Pequeño", fontMedium:"Mediano", fontLarge:"Grande",
+    highContrastLabel:"Contraste", contrastOff:"Estándar", contrastMedium:"Medio", contrastHigh:"Alto",
+    autoSpeakLabel:"Leer respuestas en voz alta",
+    currentSelection:"Estudiando", errorMsg:"Error al conectar con el servidor de IA local",
+    helpBtn:"Ayuda", settingsBtn:"Configuración", signInBtn:"Iniciar sesión", signOutBtn:"Cerrar sesión",
+    signInTitle:"Iniciar sesión", signInNote:"Solo local: personaliza tu sesión, no se envía nada a ningún lado.",
+    nameLabel:"Tu nombre", namePlaceholder:"ej. Alex",
+    helpTitle:"Guía rápida", helpLearnTitle:"Modos de aprendizaje",
+    helpLearnDesc:"Enseñanza, Preguntas, Ejemplos y Prep. Examen son distintos estilos de chat: elige uno, indica tu curso y asignatura, y empieza a preguntar.",
+    helpToolsTitle:"Herramientas de estudio", helpToolsDesc:"Tarjetas y Cuestionario generan material de práctica sobre cualquier tema que escribas. Progreso muestra tu rendimiento en esta sesión.",
+    helpSettingsTitle:"Configuración", helpSettingsDesc:"Cambia el tema de color, idioma, fuente, tamaño de texto, alto contraste y lectura automática desde el ícono de engranaje.",
+    newChatBtn:"Nuevo chat", exportBtn:"Exportar", clearBtn:"Borrar",
+    clearConfirm:"¿Borrar este chat? No se puede deshacer.",
+    sessionName:"Chat", flashcardsTitle:"Tarjetas", flashcardsTopicPlaceholder:"Tema, ej. Ecuaciones cuadráticas",
+    generateBtn:"Generar", generatingText:"Generando...", flashcardsEmpty:"Escribe un tema arriba para generar tarjetas.",
+    flashcardsError:"No se pudieron generar las tarjetas. Intenta de nuevo.", knowBtn:"Lo sé", reviewBtn:"Aún aprendiendo",
+    cardOf:"Tarjeta {n} de {total}", quizTitle:"Cuestionario", quizTopicPlaceholder:"Tema, ej. Biología celular",
+    quizEmpty:"Escribe un tema arriba para generar un cuestionario de 5 preguntas.", quizError:"No se pudo generar el cuestionario. Intenta de nuevo.",
+    nextBtn:"Siguiente", questionOf:"Pregunta {n} de {total}", quizResultTitle:"¡Cuestionario completado!",
+    quizResultScore:"Obtuviste {score} de {total}", tryAnotherBtn:"Otro cuestionario",
+    progressTitle:"Tu progreso", statsMessages:"Mensajes enviados", statsFlashcards:"Tarjetas dominadas",
+    statsQuizzes:"Cuestionarios realizados", statsAccuracy:"Precisión",
+    streakTitle:"Racha diaria", streakNote:"Haz algo en el tutor cada día para mantenerla.",
+    goalTitle:"Meta de hoy", setGoalBtn:"Fijar",
+    heatmapTitle:"Actividad de las últimas 12 semanas", heatmapLess:"Menos", heatmapMore:"Más",
+    badgesTitle:"Logros",
+    badge_first_steps:"Primeros pasos", badge_first_steps_desc:"Envía tu primer mensaje al tutor.",
+    badge_quiz_whiz:"Genio del cuestionario", badge_quiz_whiz_desc:"Completa 5 cuestionarios.",
+    badge_card_master:"Maestro de tarjetas", badge_card_master_desc:"Marca 25 tarjetas como dominadas.",
+    badge_on_fire:"En racha", badge_on_fire_desc:"Alcanza una racha de 3 días.",
+    badge_unstoppable:"Imparable", badge_unstoppable_desc:"Alcanza una racha de 7 días.",
+    badge_perfect_score:"Puntuación perfecta", badge_perfect_score_desc:"Obtén el 100% en un cuestionario.",
+    badge_goal_getter:"Cumplidor de metas", badge_goal_getter_desc:"Alcanza tu meta diaria 5 veces.",
+    printReportBtn:"Imprimir informe semanal", reportTitle:"Informe de progreso semanal",
+    reportStudentLabel:"Estudiante", reportRangeLabel:"Semana", reportActionsLabel:"Acciones de estudio esta semana",
+    remindersLabel:"Recordatorios de estudio",
+    remindersNote:"Te avisa si aún no has estudiado hoy. Necesita que esta pestaña siga abierta y permiso de notificaciones.",
+    navPracticeTest:"Examen de práctica", practiceTestTitle:"Examen de práctica",
+    ptTopicPlaceholder:"Tema, ej. Fuerzas y movimiento", ptDurationLabel:"Tiempo límite", ptNumQuestionsLabel:"Número de preguntas",
+    ptSetupNote:"Al empezar, se activa un cronómetro y la IA califica tus respuestas al final — como un examen real.",
+    ptStartBtn:"Comenzar examen", ptSubmitBtn:"Entregar examen", ptPrevBtn:"Anterior", ptNextBtn:"Siguiente",
+    ptYourAnswerPlaceholder:"Escribe tu respuesta aquí...", ptSubmitConfirm:"¿Entregar el examen ahora? No podrás cambiar tus respuestas después.",
+    ptGradingText:"Calificando tus respuestas...", ptOverallScoreLabel:"Puntuación total", ptRetakeBtn:"Hacer otro examen",
+    ptError:"No se pudo generar o calificar el examen. Intenta de nuevo.", ptAutoSubmitNotice:"Se acabó el tiempo — tu examen se entregó automáticamente.",
+    ptLeaveConfirm:"Estás en medio de un examen cronometrado — el reloj sigue corriendo si te vas. ¿Continuar de todas formas?",
+    yourAnswerLabel:"Tu respuesta", statsPracticeTests:"Exámenes de práctica realizados", minutesAbbrev:"min",
+    badge_test_ready:"Listo para el examen", badge_test_ready_desc:"Completa tu primer examen de práctica.",
+    reminderBannerText:"Aún no has estudiado hoy — ¡mantén tu racha!",
+    reminderNotifTitle:"¡Hora de estudiar!", reminderNotifBody:"Aún no has estudiado hoy — mantén tu racha." },
+
+  fr:{ appTitle:"Tuteur IA", navTutor:"Enseignement", navQuestions:"Questions", navExamples:"Exemples", navExamPrep:"Prépa Examen", navMisc:"Parler de tout",
+    sectionLearn:"Apprendre", sectionTools:"Outils", sectionOther:"Autre", navFlashcards:"Cartes", navQuiz:"Quiz", navProgress:"Progrès",
+    searchLabel:"Niveau et matière", searchPlaceholder:"Rechercher ex. Year 10 Physics...", anyTopicBtn:"Sujet libre", anyTopicTitle:"Posez n'importe quelle question, sans matière fixe",
+    modeTeaching:"Mode Enseignement", modeQuestions:"Mode Questions", modeExamples:"Mode Exemples", modeExamPrep:"Mode Prépa Examen", modeMisc:"Discussion libre",
+    welcomeMessage:"Bonjour ! Je suis votre tuteur IA. Dites-moi ce que vous voulez apprendre — je peux vous aider en maths, sciences, anglais et préparation aux examens QCAA.",
+    inputPlaceholder:"Posez une question à votre tuteur...", sendBtn:"Envoyer", thinking:"Réflexion",
+    settingsTitle:"Paramètres", themeLabel:"Thème", languageLabel:"Langue", doneBtn:"Terminé",
+    fontLabel:"Police", fontStandard:"Standard", fontDyslexic:"Adaptée à la dyslexie (OpenDyslexic)",
+    fontSizeLabel:"Taille du texte", fontSmall:"Petit", fontMedium:"Moyen", fontLarge:"Grand",
+    highContrastLabel:"Contraste", contrastOff:"Standard", contrastMedium:"Moyen", contrastHigh:"Élevé",
+    autoSpeakLabel:"Lire les réponses à voix haute",
+    currentSelection:"Étudie", errorMsg:"Erreur de connexion au serveur d'IA local",
+    helpBtn:"Aide", settingsBtn:"Paramètres", signInBtn:"Connexion", signOutBtn:"Déconnexion",
+    signInTitle:"Connexion", signInNote:"Local uniquement — personnalise votre session, rien n'est envoyé.",
+    nameLabel:"Votre nom", namePlaceholder:"ex. Alex",
+    helpTitle:"Guide rapide", helpLearnTitle:"Modes d'apprentissage",
+    helpLearnDesc:"Enseignement, Questions, Exemples et Prépa Examen sont différents styles de chat — choisissez-en un, indiquez votre niveau et matière, et posez vos questions.",
+    helpToolsTitle:"Outils d'étude", helpToolsDesc:"Cartes et Quiz génèrent du contenu d'entraînement sur le sujet que vous saisissez. Progrès suit votre performance de cette session.",
+    helpSettingsTitle:"Paramètres", helpSettingsDesc:"Changez le thème de couleur, la langue, la police, la taille du texte, le contraste élevé et la lecture automatique depuis l'icône d'engrenage.",
+    newChatBtn:"Nouveau chat", exportBtn:"Exporter", clearBtn:"Effacer",
+    clearConfirm:"Effacer ce chat ? Action irréversible.",
+    sessionName:"Chat", flashcardsTitle:"Cartes mémo", flashcardsTopicPlaceholder:"Sujet, ex. Équations du second degré",
+    generateBtn:"Générer", generatingText:"Génération...", flashcardsEmpty:"Entrez un sujet ci-dessus pour générer des cartes.",
+    flashcardsError:"Impossible de générer les cartes. Réessayez.", knowBtn:"Je sais", reviewBtn:"En apprentissage",
+    cardOf:"Carte {n} sur {total}", quizTitle:"Quiz", quizTopicPlaceholder:"Sujet, ex. Biologie cellulaire",
+    quizEmpty:"Entrez un sujet ci-dessus pour générer un quiz de 5 questions.", quizError:"Impossible de générer le quiz. Réessayez.",
+    nextBtn:"Suivant", questionOf:"Question {n} sur {total}", quizResultTitle:"Quiz terminé !",
+    quizResultScore:"Vous avez obtenu {score} sur {total}", tryAnotherBtn:"Essayer un autre quiz",
+    progressTitle:"Vos progrès", statsMessages:"Messages envoyés", statsFlashcards:"Cartes maîtrisées",
+    statsQuizzes:"Quiz réalisés", statsAccuracy:"Précision",
+    streakTitle:"Série quotidienne", streakNote:"Faites quelque chose dans le tuteur chaque jour pour la maintenir.",
+    goalTitle:"Objectif du jour", setGoalBtn:"Définir",
+    heatmapTitle:"Activité des 12 dernières semaines", heatmapLess:"Moins", heatmapMore:"Plus",
+    badgesTitle:"Réussites",
+    badge_first_steps:"Premiers pas", badge_first_steps_desc:"Envoyez votre premier message au tuteur.",
+    badge_quiz_whiz:"Champion du quiz", badge_quiz_whiz_desc:"Terminez 5 quiz.",
+    badge_card_master:"Maître des cartes", badge_card_master_desc:"Marquez 25 cartes comme sues.",
+    badge_on_fire:"En feu", badge_on_fire_desc:"Atteignez une série de 3 jours.",
+    badge_unstoppable:"Inarrêtable", badge_unstoppable_desc:"Atteignez une série de 7 jours.",
+    badge_perfect_score:"Score parfait", badge_perfect_score_desc:"Obtenez 100% à un quiz.",
+    badge_goal_getter:"Objectif atteint", badge_goal_getter_desc:"Atteignez votre objectif quotidien 5 fois.",
+    printReportBtn:"Imprimer le rapport hebdomadaire", reportTitle:"Rapport de progrès hebdomadaire",
+    reportStudentLabel:"Élève", reportRangeLabel:"Semaine", reportActionsLabel:"Actions d'étude cette semaine",
+    remindersLabel:"Rappels d'étude",
+    remindersNote:"Vous relance si vous n'avez pas encore étudié aujourd'hui. Nécessite que cet onglet reste ouvert et l'autorisation de notifications.",
+    navPracticeTest:"Examen blanc", practiceTestTitle:"Examen blanc",
+    ptTopicPlaceholder:"Sujet, ex. Forces et mouvement", ptDurationLabel:"Temps limite", ptNumQuestionsLabel:"Nombre de questions",
+    ptSetupNote:"Une fois lancé, un chronomètre démarre et l'IA note vos réponses à la fin — comme un vrai examen.",
+    ptStartBtn:"Commencer l'examen", ptSubmitBtn:"Rendre l'examen", ptPrevBtn:"Précédent", ptNextBtn:"Suivant",
+    ptYourAnswerPlaceholder:"Écrivez votre réponse ici...", ptSubmitConfirm:"Rendre l'examen maintenant ? Vous ne pourrez plus modifier vos réponses ensuite.",
+    ptGradingText:"Notation de vos réponses...", ptOverallScoreLabel:"Score total", ptRetakeBtn:"Refaire un examen",
+    ptError:"Impossible de générer ou noter l'examen. Réessayez.", ptAutoSubmitNotice:"Temps écoulé — votre examen a été rendu automatiquement.",
+    ptLeaveConfirm:"Vous êtes en plein examen chronométré — le temps continue de s'écouler si vous partez. Continuer quand même ?",
+    yourAnswerLabel:"Votre réponse", statsPracticeTests:"Examens blancs réalisés", minutesAbbrev:"min",
+    badge_test_ready:"Prêt pour l'examen", badge_test_ready_desc:"Terminez votre premier examen blanc.",
+    reminderBannerText:"Vous n'avez pas encore étudié aujourd'hui — maintenez votre série !",
+    reminderNotifTitle:"C'est l'heure d'étudier !", reminderNotifBody:"Vous n'avez pas encore étudié aujourd'hui — maintenez votre série." },
+
+  de:{ appTitle:"KI-Tutor", navTutor:"Unterricht", navQuestions:"Fragen", navExamples:"Beispiele", navExamPrep:"Prüfungsvorbereitung", navMisc:"Über alles reden",
+    sectionLearn:"Lernen", sectionTools:"Lernmittel", sectionOther:"Sonstiges", navFlashcards:"Karteikarten", navQuiz:"Quiz", navProgress:"Fortschritt",
+    searchLabel:"Jahrgangsstufe & Fach", searchPlaceholder:"Suche z.B. Year 10 Physics...", anyTopicBtn:"Beliebiges Thema", anyTopicTitle:"Frag alles, ohne festes Fach",
+    modeTeaching:"Unterrichtsmodus", modeQuestions:"Fragenmodus", modeExamples:"Beispielmodus", modeExamPrep:"Prüfungsmodus", modeMisc:"Offenes Gespräch",
+    welcomeMessage:"Hallo! Ich bin dein KI-Tutor. Sag mir, was du lernen möchtest — ich helfe bei Mathe, Naturwissenschaften, Englisch und der QCAA-Prüfungsvorbereitung.",
+    inputPlaceholder:"Frag deinen Tutor irgendetwas...", sendBtn:"Senden", thinking:"Denke nach",
+    settingsTitle:"Einstellungen", themeLabel:"Design", languageLabel:"Sprache", doneBtn:"Fertig",
+    fontLabel:"Schriftart", fontStandard:"Standard", fontDyslexic:"Legasthenie-freundlich (OpenDyslexic)",
+    fontSizeLabel:"Textgröße", fontSmall:"Klein", fontMedium:"Mittel", fontLarge:"Groß",
+    highContrastLabel:"Kontrast", contrastOff:"Standard", contrastMedium:"Mittel", contrastHigh:"Hoch",
+    autoSpeakLabel:"Antworten automatisch vorlesen",
+    currentSelection:"Lernt gerade", errorMsg:"Fehler bei der Verbindung zum lokalen KI-Server",
+    helpBtn:"Hilfe", settingsBtn:"Einstellungen", signInBtn:"Anmelden", signOutBtn:"Abmelden",
+    signInTitle:"Anmelden", signInNote:"Nur lokal — personalisiert nur deine Sitzung, es wird nichts gesendet.",
+    nameLabel:"Dein Name", namePlaceholder:"z.B. Alex",
+    helpTitle:"Kurzanleitung", helpLearnTitle:"Lernmodi",
+    helpLearnDesc:"Unterricht, Fragen, Beispiele und Prüfungsvorbereitung sind verschiedene Chat-Stile — wähle einen, gib Jahrgangsstufe und Fach an und leg los.",
+    helpToolsTitle:"Lernmittel", helpToolsDesc:"Karteikarten und Quiz erstellen Übungsmaterial zu jedem eingegebenen Thema. Fortschritt zeigt deine Leistung in dieser Sitzung.",
+    helpSettingsTitle:"Einstellungen", helpSettingsDesc:"Ändere Farbdesign, Sprache, Schriftart, Textgröße, hohen Kontrast und automatisches Vorlesen über das Zahnrad-Symbol.",
+    newChatBtn:"Neuer Chat", exportBtn:"Exportieren", clearBtn:"Löschen",
+    clearConfirm:"Diesen Chat löschen? Das kann nicht rückgängig gemacht werden.",
+    sessionName:"Chat", flashcardsTitle:"Karteikarten", flashcardsTopicPlaceholder:"Thema, z.B. Quadratische Gleichungen",
+    generateBtn:"Erstellen", generatingText:"Wird erstellt...", flashcardsEmpty:"Gib oben ein Thema ein, um Karteikarten zu erstellen.",
+    flashcardsError:"Karteikarten konnten nicht erstellt werden. Versuch es erneut.", knowBtn:"Weiß ich", reviewBtn:"Noch am Lernen",
+    cardOf:"Karte {n} von {total}", quizTitle:"Quiz", quizTopicPlaceholder:"Thema, z.B. Zellbiologie",
+    quizEmpty:"Gib oben ein Thema ein, um ein 5-Fragen-Quiz zu erstellen.", quizError:"Quiz konnte nicht erstellt werden. Versuch es erneut.",
+    nextBtn:"Weiter", questionOf:"Frage {n} von {total}", quizResultTitle:"Quiz abgeschlossen!",
+    quizResultScore:"Du hast {score} von {total} erreicht", tryAnotherBtn:"Weiteres Quiz",
+    progressTitle:"Dein Fortschritt", statsMessages:"Gesendete Nachrichten", statsFlashcards:"Beherrschte Karten",
+    statsQuizzes:"Absolvierte Quiz", statsAccuracy:"Genauigkeit",
+    streakTitle:"Tägliche Serie", streakNote:"Mach jeden Tag etwas im Tutor, um sie zu erhalten.",
+    goalTitle:"Heutiges Ziel", setGoalBtn:"Festlegen",
+    heatmapTitle:"Aktivität der letzten 12 Wochen", heatmapLess:"Weniger", heatmapMore:"Mehr",
+    badgesTitle:"Erfolge",
+    badge_first_steps:"Erste Schritte", badge_first_steps_desc:"Sende deine erste Nachricht an den Tutor.",
+    badge_quiz_whiz:"Quiz-Ass", badge_quiz_whiz_desc:"Schließe 5 Quiz ab.",
+    badge_card_master:"Kartenmeister", badge_card_master_desc:"Markiere 25 Karteikarten als bekannt.",
+    badge_on_fire:"In Fahrt", badge_on_fire_desc:"Erreiche eine 3-Tage-Serie.",
+    badge_unstoppable:"Unaufhaltsam", badge_unstoppable_desc:"Erreiche eine 7-Tage-Serie.",
+    badge_perfect_score:"Perfekte Punktzahl", badge_perfect_score_desc:"Erreiche 100% in einem Quiz.",
+    badge_goal_getter:"Zielerreicher", badge_goal_getter_desc:"Erreiche dein Tagesziel 5-mal.",
+    printReportBtn:"Wochenbericht drucken", reportTitle:"Wöchentlicher Fortschrittsbericht",
+    reportStudentLabel:"Schüler", reportRangeLabel:"Woche", reportActionsLabel:"Lernaktionen diese Woche",
+    remindersLabel:"Lernerinnerungen",
+    remindersNote:"Erinnert dich, falls du heute noch nicht gelernt hast. Erfordert, dass dieser Tab offen bleibt, und Benachrichtigungserlaubnis.",
+    navPracticeTest:"Übungstest", practiceTestTitle:"Übungstest",
+    ptTopicPlaceholder:"Thema, z.B. Kräfte und Bewegung", ptDurationLabel:"Zeitlimit", ptNumQuestionsLabel:"Anzahl der Fragen",
+    ptSetupNote:"Sobald du startest, läuft ein Timer, und die KI bewertet deine Antworten am Ende — wie bei einer echten Prüfung.",
+    ptStartBtn:"Test starten", ptSubmitBtn:"Test abgeben", ptPrevBtn:"Zurück", ptNextBtn:"Weiter",
+    ptYourAnswerPlaceholder:"Schreib deine Antwort hier...", ptSubmitConfirm:"Test jetzt abgeben? Du kannst deine Antworten danach nicht mehr ändern.",
+    ptGradingText:"Deine Antworten werden bewertet...", ptOverallScoreLabel:"Gesamtpunktzahl", ptRetakeBtn:"Weiteren Test machen",
+    ptError:"Test konnte nicht erstellt oder bewertet werden. Versuch es erneut.", ptAutoSubmitNotice:"Zeit abgelaufen — dein Test wurde automatisch abgegeben.",
+    ptLeaveConfirm:"Du bist mitten in einem zeitlich begrenzten Test — die Uhr läuft weiter, wenn du gehst. Trotzdem fortfahren?",
+    yourAnswerLabel:"Deine Antwort", statsPracticeTests:"Absolvierte Übungstests", minutesAbbrev:"Min.",
+    badge_test_ready:"Testbereit", badge_test_ready_desc:"Schließe deinen ersten Übungstest ab.",
+    reminderBannerText:"Du hast heute noch nicht gelernt — halte deine Serie am Leben!",
+    reminderNotifTitle:"Zeit zum Lernen!", reminderNotifBody:"Du hast heute noch nicht gelernt — halte deine Serie am Leben." },
+
+  ja:{ appTitle:"AIチューター", navTutor:"授業", navQuestions:"問題", navExamples:"例題", navExamPrep:"試験対策", navMisc:"何でも話す",
+    sectionLearn:"学ぶ", sectionTools:"学習ツール", sectionOther:"その他", navFlashcards:"フラッシュカード", navQuiz:"クイズ", navProgress:"進捗",
+    searchLabel:"学年と科目", searchPlaceholder:"検索 例：Year 10 Physics...", anyTopicBtn:"何でもOK", anyTopicTitle:"科目を固定せず何でも質問できます",
+    modeTeaching:"授業モード", modeQuestions:"問題モード", modeExamples:"例題モード", modeExamPrep:"試験対策モード", modeMisc:"フリートーク",
+    welcomeMessage:"こんにちは！AIチューターです。学びたいことを教えてください。数学、理科、英語、QCAA試験対策をサポートします。",
+    inputPlaceholder:"チューターに質問してみましょう...", sendBtn:"送信", thinking:"考え中",
+    settingsTitle:"設定", themeLabel:"テーマ", languageLabel:"言語", doneBtn:"完了",
+    fontLabel:"フォント", fontStandard:"標準", fontDyslexic:"ディスレクシア対応（OpenDyslexic）",
+    fontSizeLabel:"文字サイズ", fontSmall:"小", fontMedium:"中", fontLarge:"大",
+    highContrastLabel:"コントラスト", contrastOff:"標準", contrastMedium:"中", contrastHigh:"高",
+    autoSpeakLabel:"返信を自動音読",
+    currentSelection:"学習中", errorMsg:"ローカルAIサーバーへの接続エラー",
+    helpBtn:"ヘルプ", settingsBtn:"設定", signInBtn:"サインイン", signOutBtn:"サインアウト",
+    signInTitle:"サインイン", signInNote:"ローカルのみ — セッションを個人化するだけで、どこにも送信されません。",
+    nameLabel:"お名前", namePlaceholder:"例：Alex",
+    helpTitle:"クイックガイド", helpLearnTitle:"学習モード",
+    helpLearnDesc:"授業、問題、例題、試験対策はそれぞれ異なるチャットスタイルです。1つ選び、学年と科目を設定して質問を始めましょう。",
+    helpToolsTitle:"学習ツール", helpToolsDesc:"フラッシュカードとクイズは、入力したトピックに基づいて練習教材を生成します。進捗ではこのセッションの状況を確認できます。",
+    helpSettingsTitle:"設定", helpSettingsDesc:"歯車アイコンからカラーテーマ、言語、フォント、文字サイズ、ハイコントラスト、自動音読を変更できます。",
+    newChatBtn:"新しいチャット", exportBtn:"エクスポート", clearBtn:"消去",
+    clearConfirm:"このチャットを消去しますか？元に戻せません。",
+    sessionName:"チャット", flashcardsTitle:"フラッシュカード", flashcardsTopicPlaceholder:"トピック 例：二次方程式",
+    generateBtn:"生成", generatingText:"生成中...", flashcardsEmpty:"上にトピックを入力してカードを生成してください。",
+    flashcardsError:"カードを生成できませんでした。再試行してください。", knowBtn:"覚えた", reviewBtn:"学習中",
+    cardOf:"カード {n} / {total}", quizTitle:"クイズ", quizTopicPlaceholder:"トピック 例：細胞生物学",
+    quizEmpty:"上にトピックを入力して5問のクイズを生成してください。", quizError:"クイズを生成できませんでした。再試行してください。",
+    nextBtn:"次へ", questionOf:"質問 {n} / {total}", quizResultTitle:"クイズ終了！",
+    quizResultScore:"{total}問中{score}問正解", tryAnotherBtn:"別のクイズに挑戦",
+    progressTitle:"あなたの進捗", statsMessages:"送信したメッセージ", statsFlashcards:"習得したカード",
+    statsQuizzes:"受けたクイズ", statsAccuracy:"正答率",
+    streakTitle:"連続学習日数", streakNote:"毎日チューターで何かをして継続しましょう。",
+    goalTitle:"今日の目標", setGoalBtn:"設定",
+    heatmapTitle:"過去12週間の活動", heatmapLess:"少ない", heatmapMore:"多い",
+    badgesTitle:"実績",
+    badge_first_steps:"最初の一歩", badge_first_steps_desc:"チューターに最初のメッセージを送りましょう。",
+    badge_quiz_whiz:"クイズ名人", badge_quiz_whiz_desc:"クイズを5回完了しましょう。",
+    badge_card_master:"カードマスター", badge_card_master_desc:"25枚のカードを「覚えた」にしましょう。",
+    badge_on_fire:"絶好調", badge_on_fire_desc:"3日連続を達成しましょう。",
+    badge_unstoppable:"止まらない", badge_unstoppable_desc:"7日連続を達成しましょう。",
+    badge_perfect_score:"満点", badge_perfect_score_desc:"クイズで100%を取りましょう。",
+    badge_goal_getter:"目標達成者", badge_goal_getter_desc:"1日の目標を5回達成しましょう。",
+    printReportBtn:"週間レポートを印刷", reportTitle:"週間進捗レポート",
+    reportStudentLabel:"生徒", reportRangeLabel:"週", reportActionsLabel:"今週の学習アクション",
+    remindersLabel:"学習リマインダー",
+    remindersNote:"今日まだ学習していない場合に通知します。このタブを開いたままにし、通知の許可が必要です。",
+    navPracticeTest:"模擬試験", practiceTestTitle:"模擬試験",
+    ptTopicPlaceholder:"トピック 例：力と運動", ptDurationLabel:"制限時間", ptNumQuestionsLabel:"問題数",
+    ptSetupNote:"開始するとタイマーが作動し、終了時にAIが解答を採点します — 本番の試験のように。",
+    ptStartBtn:"試験を開始", ptSubmitBtn:"試験を提出", ptPrevBtn:"前へ", ptNextBtn:"次へ",
+    ptYourAnswerPlaceholder:"ここに解答を書いてください...", ptSubmitConfirm:"今すぐ試験を提出しますか？提出後は解答を変更できません。",
+    ptGradingText:"解答を採点中...", ptOverallScoreLabel:"総合得点", ptRetakeBtn:"別の試験に挑戦",
+    ptError:"試験を生成または採点できませんでした。再試行してください。", ptAutoSubmitNotice:"時間切れです — 試験は自動的に提出されました。",
+    ptLeaveConfirm:"制限時間付きの試験の途中です — 離れてもタイマーは進み続けます。続行しますか？",
+    yourAnswerLabel:"あなたの解答", statsPracticeTests:"受けた模擬試験", minutesAbbrev:"分",
+    badge_test_ready:"試験準備完了", badge_test_ready_desc:"最初の模擬試験を完了しましょう。",
+    reminderBannerText:"まだ今日は学習していません — 連続記録を維持しましょう！",
+    reminderNotifTitle:"学習の時間です！", reminderNotifBody:"まだ今日は学習していません — 連続記録を維持しましょう。" },
+
+  zh:{ appTitle:"AI 辅导老师", navTutor:"讲解", navQuestions:"练习题", navExamples:"例题", navExamPrep:"考试准备", navMisc:"随便聊聊",
+    sectionLearn:"学习", sectionTools:"学习工具", sectionOther:"其他", navFlashcards:"抽认卡", navQuiz:"测验", navProgress:"进度",
+    searchLabel:"年级与科目", searchPlaceholder:"搜索，例如 Year 10 Physics...", anyTopicBtn:"任意主题", anyTopicTitle:"不限科目，问任何问题",
+    modeTeaching:"讲解模式", modeQuestions:"练习题模式", modeExamples:"例题模式", modeExamPrep:"考试准备模式", modeMisc:"自由聊天",
+    welcomeMessage:"你好！我是你的 AI 辅导老师。告诉我你想学什么——我可以帮你学习数学、科学、英语，以及 QCAA 考试准备。",
+    inputPlaceholder:"向你的辅导老师提问...", sendBtn:"发送", thinking:"思考中",
+    settingsTitle:"设置", themeLabel:"主题", languageLabel:"语言", doneBtn:"完成",
+    fontLabel:"字体", fontStandard:"标准", fontDyslexic:"阅读障碍友好字体（OpenDyslexic）",
+    fontSizeLabel:"文字大小", fontSmall:"小", fontMedium:"中", fontLarge:"大",
+    highContrastLabel:"对比度", contrastOff:"标准", contrastMedium:"中", contrastHigh:"高",
+    autoSpeakLabel:"自动朗读回复",
+    currentSelection:"学习内容", errorMsg:"连接本地 AI 服务器时出错",
+    helpBtn:"帮助", settingsBtn:"设置", signInBtn:"登录", signOutBtn:"退出登录",
+    signInTitle:"登录", signInNote:"仅本地保存 — 只用于个性化你的会话，不会发送到任何地方。",
+    nameLabel:"你的名字", namePlaceholder:"例如 Alex",
+    helpTitle:"快速指南", helpLearnTitle:"学习模式",
+    helpLearnDesc:"讲解、练习题、例题和考试准备是不同的对话风格——选一个，设置年级与科目，就可以开始提问了。",
+    helpToolsTitle:"学习工具", helpToolsDesc:"抽认卡和测验会根据你输入的主题生成练习材料。进度页面会展示你本次会话的表现。",
+    helpSettingsTitle:"设置", helpSettingsDesc:"在齿轮图标中可以更改配色主题、语言、字体、文字大小、高对比度和自动朗读。",
+    newChatBtn:"新建对话", exportBtn:"导出", clearBtn:"清除",
+    clearConfirm:"清除此对话？此操作无法撤销。",
+    sessionName:"对话", flashcardsTitle:"抽认卡", flashcardsTopicPlaceholder:"主题，例如二次方程",
+    generateBtn:"生成", generatingText:"生成中...", flashcardsEmpty:"在上方输入主题以生成抽认卡。",
+    flashcardsError:"无法生成抽认卡，请重试。", knowBtn:"我会了", reviewBtn:"仍在学习",
+    cardOf:"第 {n} 张，共 {total} 张", quizTitle:"测验", quizTopicPlaceholder:"主题，例如细胞生物学",
+    quizEmpty:"在上方输入主题以生成 5 道测验题。", quizError:"无法生成测验，请重试。",
+    nextBtn:"下一题", questionOf:"第 {n} 题，共 {total} 题", quizResultTitle:"测验完成！",
+    quizResultScore:"你答对了 {total} 题中的 {score} 题", tryAnotherBtn:"再来一次测验",
+    progressTitle:"你的进度", statsMessages:"已发送消息", statsFlashcards:"已掌握卡片",
+    statsQuizzes:"已完成测验", statsAccuracy:"正确率",
+    streakTitle:"连续学习", streakNote:"每天在辅导老师这里做点什么以保持连续记录。",
+    goalTitle:"今日目标", setGoalBtn:"设置",
+    heatmapTitle:"过去12周的活动", heatmapLess:"较少", heatmapMore:"较多",
+    badgesTitle:"成就",
+    badge_first_steps:"迈出第一步", badge_first_steps_desc:"向辅导老师发送第一条消息。",
+    badge_quiz_whiz:"测验高手", badge_quiz_whiz_desc:"完成5次测验。",
+    badge_card_master:"卡片达人", badge_card_master_desc:"将25张卡片标记为已掌握。",
+    badge_on_fire:"势头正猛", badge_on_fire_desc:"达成连续3天学习。",
+    badge_unstoppable:"势不可挡", badge_unstoppable_desc:"达成连续7天学习。",
+    badge_perfect_score:"满分", badge_perfect_score_desc:"在一次测验中获得满分。",
+    badge_goal_getter:"目标达成者", badge_goal_getter_desc:"达成每日目标5次。",
+    printReportBtn:"打印周报", reportTitle:"每周进度报告",
+    reportStudentLabel:"学生", reportRangeLabel:"周", reportActionsLabel:"本周学习行为",
+    remindersLabel:"学习提醒",
+    remindersNote:"如果你今天还没学习会提醒你。需要保持此标签页打开，并授予通知权限。",
+    navPracticeTest:"模拟测验", practiceTestTitle:"模拟测验",
+    ptTopicPlaceholder:"主题，例如力与运动", ptDurationLabel:"时间限制", ptNumQuestionsLabel:"题目数量",
+    ptSetupNote:"开始后会启动计时器，结束时由 AI 为你的答案评分——就像真正的考试一样。",
+    ptStartBtn:"开始测验", ptSubmitBtn:"提交测验", ptPrevBtn:"上一题", ptNextBtn:"下一题",
+    ptYourAnswerPlaceholder:"在此处写下你的答案...", ptSubmitConfirm:"现在提交测验吗？提交后将无法更改答案。",
+    ptGradingText:"正在评分你的答案...", ptOverallScoreLabel:"总分", ptRetakeBtn:"再做一次测验",
+    ptError:"无法生成或评分测验，请重试。", ptAutoSubmitNotice:"时间到——你的测验已自动提交。",
+    ptLeaveConfirm:"你正在进行一场限时测验——离开后计时仍会继续。仍要离开吗？",
+    yourAnswerLabel:"你的答案", statsPracticeTests:"已完成模拟测验", minutesAbbrev:"分钟",
+    badge_test_ready:"测验就绪", badge_test_ready_desc:"完成你的第一场模拟测验。",
+    reminderBannerText:"你今天还没学习——保持你的连续记录吧！",
+    reminderNotifTitle:"该学习啦！", reminderNotifBody:"你今天还没学习——保持你的连续记录。" }
+};
+
+const LANG_NAMES = { en:"English", es:"Spanish", fr:"French", de:"German", ja:"Japanese", zh:"Chinese" };
+const SPEECH_LANGS = { en:"en-US", es:"es-ES", fr:"fr-FR", de:"de-DE", ja:"ja-JP", zh:"zh-CN" };
+const FONT_SIZES = { small:"14px", medium:"16px", large:"19px" };
+
+const YEARS = ["Year 7","Year 8","Year 9","Year 10","Year 11","Year 12"];
+
+// ============ MATH RENDERING (KaTeX) ============
+const KATEX_DELIMITERS = [
+  { left:"$$", right:"$$", display:true },
+  { left:"\\[", right:"\\]", display:true },
+  { left:"$", right:"$", display:false },
+  { left:"\\(", right:"\\)", display:false }
+];
+function renderMath(el){
+  if(window.renderMathInElement){
+    try{
+      renderMathInElement(el, { delimiters:KATEX_DELIMITERS, throwOnError:false });
+    } catch(err){ /* if a malformed expression slips through, just leave the raw text */ }
+  }
+}
+const CLASSES = ["General Mathematics","Mathematical Methods","Specialist Mathematics","Physics","Chemistry","Biology","English","Any Topic"];
+
+// A handful of starter topics per subject, shown as clickable chips above the topic
+// input on Flashcards/Quiz so students who don't know what to type still have a way in.
+const TOPIC_SUGGESTIONS = {
+  "General Mathematics": ["Linear equations","Percentages","Measurement & scale","Probability basics"],
+  "Mathematical Methods": ["Quadratic functions","Differentiation basics","Trigonometric functions","Exponentials & logs"],
+  "Specialist Mathematics": ["Complex numbers","Vectors","Mathematical induction","Related rates"],
+  "Physics": ["Newton's laws","Energy & work","Circular motion","Electric circuits"],
+  "Chemistry": ["Periodic trends","Chemical bonding","Acids & bases","Stoichiometry"],
+  "Biology": ["Cell structure","DNA & genetics","Natural selection","Homeostasis"],
+  "English": ["Persuasive techniques","Poetic devices","Essay structure","Analysing tone"],
+  "Any Topic": ["Something you're curious about","A book or show you like","Current events","A hobby you want to explore"]
+};
+
+function renderTopicChips(){
+  const topics = TOPIC_SUGGESTIONS[state.classType] || [];
+  [["flashcardChips","flashcardTopic"], ["quizChips","quizTopic"], ["ptChips","ptTopic"]].forEach(([wrapId, inputId])=>{
+    const wrap = document.getElementById(wrapId);
+    if(!wrap) return;
+    wrap.innerHTML = "";
+    topics.forEach(topic=>{
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "topic-chip";
+      chip.textContent = topic;
+      chip.addEventListener("click", ()=>{
+        document.getElementById(inputId).value = topic;
+      });
+      wrap.appendChild(chip);
+    });
+  });
+}
+
+const SYSTEM_PROMPT =
+`You are an expert Australian QCAA high school tutor for Year 7-12 students.
+Automatically detect the subject and topic from the student's message and the Year/Class fields provided.
+If Class is "Any Topic", there is no fixed subject — the student has deliberately opted out of a set subject, so figure out what they're asking about from their message itself and respond naturally, without forcing it into a Math/Science/English framing unless that's genuinely what they asked about.
+
+Subjects:
+Math: General Mathematics, Mathematical Methods, Specialist Mathematics
+Science: Physics, Chemistry, Biology
+English: English
+
+Teaching modes:
+- Tutor: Explain clearly, step by step.
+- Questions: Create practice questions. Do not reveal answers immediately.
+- Examples: Give worked examples.
+- Exam Prep: Create QCAA-style exam questions.
+- Misc: The student wants to talk about something other than schoolwork. Drop the QCAA-tutor framing and the Year/Class subject rules below — just have a normal, friendly, open conversation about whatever they bring up. Keep it appropriate for a school-aged audience and steer back toward something constructive if the topic turns clearly unsafe or inappropriate, but otherwise don't force it back to schoolwork.
+
+Rules:
+- Adjust difficulty to year level.
+- Explain concepts before answers.
+- Encourage learning; ask guiding questions.
+- Always respond entirely in the student's interface language, given below as "Interface language". This overrides the language the student's message is written in — if they type in a different language than their interface setting, still reply in the interface language, unless their message explicitly asks you to switch languages (e.g. "reply in French from now on").
+- Format ALL math using LaTeX: wrap inline expressions in single dollar signs, e.g. $x^2 + 3x - 4 = 0$, and wrap standalone equations or multi-line working in double dollar signs, e.g. $$\\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}$$. Use LaTeX for fractions (\\frac{}{}), exponents (^), subscripts (_), square roots (\\sqrt{}), and Greek letters (\\pi, \\theta, etc). Never write math as plain-text ASCII (e.g. avoid "x^2" or "1/2" outside of LaTeX delimiters).`;
+
+// ============ RESPONSE DEPTH ============
+// Controls how much the AI writes back. Sent to the server per-request (which maps it to
+// Ollama's num_predict/temperature) and also folded into the message as a plain instruction,
+// since not every local model reliably obeys length hints from generation settings alone.
+const DEPTH_CONFIG = {
+  low:     { instruction:"Keep your response short and to the point — a few sentences at most. No unnecessary elaboration." },
+  medium:  { instruction:"Give a clear, balanced explanation — thorough but not padded." },
+  high:    { instruction:"Give a detailed, thorough explanation with examples where useful." },
+  thinker: { instruction:"Think through the problem carefully, step by step, before answering. Show your reasoning, then clearly state your final answer or explanation at the end." }
+};
+
+function t(key, vars){
+  let str = I18N[state.lang][key] || key;
+  if(vars){
+    Object.keys(vars).forEach(k=>{ str = str.replace(`{${k}}`, vars[k]); });
+  }
+  return str;
+}
+
+function newSessionObject(name){
+  return {
+    id: "s" + Date.now() + Math.floor(Math.random()*1000),
+    title: name,
+    chatHistory: [{ role:"system", content:SYSTEM_PROMPT }],
+    transcript: [{ type:"ai", text: I18N[state.lang].welcomeMessage }]
+  };
+}
+
+let state = {
+  mode:"Tutor",
+  view:"chat",
+  theme:"purple",
+  lang:"en",
+  font:"standard",
+  fontSize:"medium",
+  contrastLevel:"off",
+  autoSpeak:false,
+  responseDepth:"medium",
+  density:"comfortable",
+  showTimestamps:false,
+  soundEffects:false,
+  user:null,
+  year:"Year 10",
+  classType:"General Mathematics",
+  sessions:[],
+  currentSessionId:null,
+  progress:{ messagesSent:0, flashcardsKnown:0, flashcardsReviewed:0, quizzesTaken:0, quizQuestionsAnswered:0, quizCorrect:0 },
+  streak:{ count:0, lastActiveDate:null },
+  goal:{ target:10, progress:0, date:null, reachedToday:false },
+  lifetime:{ messages:0, flashcardsKnown:0, quizzesTaken:0, quizzesPerfect:0, goalDaysReached:0, practiceTestsTaken:0, practiceTestsPerfect:0 },
+  activityLog:{},
+  remindersEnabled:false,
+  flashcards:{ deck:[], index:0, flipped:false },
+  practiceTest:{ status:"setup", questions:[], answers:[], index:0, durationMinutes:20, secondsRemaining:0, timerId:null, results:null },
+  quiz:{ questions:[], index:0, score:0, answered:false, finished:false }
+};
+// Note: streak, goal, badges and the activity heatmap use localStorage so they survive
+// reloads — but that only works once this file is opened directly in a browser (or hosted),
+// since Claude.ai's in-chat preview sandboxes storage. Everything else here is in-memory only.
+
+state.sessions.push(newSessionObject(I18N.en.sessionName + " 1"));
+state.currentSessionId = state.sessions[0].id;
+
+const MODE_KEY = { Tutor:"modeTeaching", Questions:"modeQuestions", Examples:"modeExamples", "Exam Prep":"modeExamPrep", Misc:"modeMisc" };
+
+function currentSession(){
+  return state.sessions.find(s=>s.id === state.currentSessionId);
+}
+
+// ============ TRANSLATIONS / RENDER ============
+function applyTranslations(){
+  const dict = I18N[state.lang];
+  document.querySelectorAll("[data-i18n]").forEach(el=>{
+    const key = el.getAttribute("data-i18n");
+    if(dict[key]) el.textContent = dict[key];
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(el=>{
+    const key = el.getAttribute("data-i18n-placeholder");
+    if(dict[key]) el.placeholder = dict[key];
+  });
+  document.querySelectorAll("[data-i18n-title]").forEach(el=>{
+    const key = el.getAttribute("data-i18n-title");
+    if(dict[key]) el.title = dict[key];
+  });
+  document.getElementById("modeTitle").textContent = dict[MODE_KEY[state.mode]];
+  updateCurrentSelectionLabel();
+  renderSessionTabs();
+  updateProgressView();
+  renderBadges();
+  populateDepthQuickSelect();
+  ptPopulateDurationOptions();
+}
+
+function updateCurrentSelectionLabel(){
+  const dict = I18N[state.lang];
+  document.getElementById("searchCurrent").innerHTML =
+    `${dict.currentSelection}: <strong>${state.year} · ${state.classType}</strong>`;
+  document.getElementById("anyTopicBtn").classList.toggle("active", state.classType === "Any Topic");
+}
+
+// ============ VIEW / MODE SWITCHING ============
+function setMode(newMode, btn){
+  state.mode = newMode;
+  document.querySelectorAll('.sidebtn[data-mode]').forEach(b=>b.classList.remove("active"));
+  document.querySelectorAll('.sidebtn[data-view]').forEach(b=>b.classList.remove("active"));
+  if(btn) btn.classList.add("active");
+  setView("chat", null);
+  document.getElementById("modeTitle").textContent = I18N[state.lang][MODE_KEY[newMode]];
+}
+
+function setView(view, btn){
+  // Leaving the Practice Test view while a timed test is running doesn't stop the
+  // clock — confirm first so students don't lose time accidentally.
+  if(state.view === "practicetest" && view !== "practicetest" && state.practiceTest.status === "active"){
+    if(!confirm(t("ptLeaveConfirm"))) return;
+  }
+
+  state.view = view;
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  document.getElementById("view-" + view).classList.add("active");
+
+  if(view !== "chat"){
+    document.querySelectorAll('.sidebtn[data-mode]').forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll('.sidebtn[data-view]').forEach(b=>b.classList.remove("active"));
+    if(btn) btn.classList.add("active");
+  } else {
+    document.querySelectorAll('.sidebtn[data-view]').forEach(b=>b.classList.remove("active"));
+    const modeBtn = document.querySelector(`.sidebtn[data-mode="${state.mode}"]`);
+    if(modeBtn) modeBtn.classList.add("active");
+  }
+
+  if(view === "progress") updateProgressView();
+  if(view === "chat") evaluateReminderBanner();
+}
+
+// ============ CHAT RENDERING ============
+function renderChatFromSession(){
+  const chat = document.getElementById("chat");
+  chat.innerHTML = "";
+  currentSession().transcript.forEach(m => addMessage(m.text, m.type, false, m.time));
+  refreshRegenerateButton();
+}
+
+function formatTime(iso){
+  try{ return new Date(iso).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" }); }
+  catch(err){ return ""; }
+}
+
+function addMessage(text, type, remember, time){
+  if(remember === undefined) remember = true;
+  if(!time) time = new Date().toISOString();
+  const chat = document.getElementById("chat");
+  const div = document.createElement("div");
+  div.className = "message " + type;
+
+  const textNode = document.createElement("div");
+  textNode.innerText = text;
+  div.appendChild(textNode);
+
+  if(state.showTimestamps){
+    const timeEl = document.createElement("div");
+    timeEl.className = "message-time";
+    timeEl.textContent = formatTime(time);
+    div.appendChild(timeEl);
+  }
+
+  if(type === "ai"){
+    const actions = document.createElement("div");
+    actions.className = "msg-actions";
+
+    const speakBtn = document.createElement("button");
+    speakBtn.className = "speak-btn";
+    speakBtn.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+    speakBtn.title = "Read aloud";
+    speakBtn.addEventListener("click", ()=> speak(text));
+
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "copy-btn";
+    copyBtn.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+    copyBtn.title = t("copyBtn") || "Copy";
+    copyBtn.addEventListener("click", ()=>{
+      navigator.clipboard.writeText(text).then(()=>{
+        copyBtn.classList.add("copied");
+        setTimeout(()=> copyBtn.classList.remove("copied"), 1200);
+      });
+    });
+
+    actions.appendChild(speakBtn);
+    actions.appendChild(copyBtn);
+    div.appendChild(actions);
+  }
+
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  renderMath(textNode);
+
+  if(remember) currentSession().transcript.push({ type, text, time });
+  return div;
+}
+
+// Live "thinking" bubble: animated dots + a running timer + a Stop button.
+// Returns an object with .remove() so call sites don't need to know about the interval underneath.
+function addThinkingBubble(onStop){
+  const chat = document.getElementById("chat");
+  const div = document.createElement("div");
+  div.className = "message ai thinking";
+  div.innerHTML = `
+    <span class="thinking-dots"><span></span><span></span><span></span></span>
+    <span class="thinking-timer">0.0s</span>
+    <button type="button" class="stop-btn">${t("stopBtn") || "Stop"}</button>
+  `;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+
+  const start = Date.now();
+  const timerEl = div.querySelector(".thinking-timer");
+  const intervalId = setInterval(()=>{
+    timerEl.textContent = ((Date.now() - start) / 1000).toFixed(1) + "s";
+  }, 100);
+
+  div.querySelector(".stop-btn").addEventListener("click", ()=>{
+    if(onStop) onStop();
+  });
+
+  return {
+    remove(){
+      clearInterval(intervalId);
+      div.remove();
+    }
+  };
+}
+
+// Tracks the in-flight request (if any) so Stop can abort it and Send can be blocked mid-request.
+let currentAbortController = null;
+
+function setSendingState(isSending){
+  document.getElementById("sendBtn").disabled = isSending;
+  refreshRegenerateButton();
+}
+
+// Enabled only when the current session's last turn is an assistant reply (i.e. there's
+// something to regenerate) and no request is already in flight.
+function refreshRegenerateButton(){
+  const btn = document.getElementById("regenBtn");
+  if(!btn) return;
+  const session = currentSession();
+  const history = session.chatHistory;
+  const lastIsAssistant = history.length > 0 && history[history.length - 1].role === "assistant";
+  btn.disabled = !lastIsAssistant || !!currentAbortController;
+}
+
+// Shared by both a normal send and a regenerate: calls the model, renders the reply,
+// and handles the Stop/error/success paths identically either way.
+async function requestAiReply(session){
+  const controller = new AbortController();
+  currentAbortController = controller;
+  setSendingState(true);
+
+  const thinkingBubble = addThinkingBubble(()=> controller.abort());
+
+  try{
+    const reply = await callOllama(session.chatHistory, controller.signal);
+    thinkingBubble.remove();
+    addMessage(reply, "ai");
+    playChime(440);
+    session.chatHistory.push({ role:"assistant", content:reply });
+    if(state.autoSpeak) speak(reply);
+  } catch(error){
+    thinkingBubble.remove();
+    if(error.name !== "AbortError"){
+      addMessage(I18N[state.lang].errorMsg, "ai");
+    }
+  } finally {
+    currentAbortController = null;
+    setSendingState(false);
+  }
+}
+
+// ============ FILE ATTACHMENTS ============
+// The local model is text-only, so only plain-text-ish files are accepted. Content is
+// read client-side and folded into the next message's content sent to Ollama.
+let attachedFile = null; // { name, content }
+const MAX_ATTACHMENT_BYTES = 200 * 1024 * 1024;
+const ATTACHMENT_EXT_PATTERN = /\.(txt|md|markdown|csv|json|log)$/i;
+
+function renderAttachmentChip(){
+  const chip = document.getElementById("attachmentChip");
+  if(!attachedFile){
+    chip.style.display = "none";
+    chip.innerHTML = "";
+    return;
+  }
+  chip.style.display = "flex";
+  chip.innerHTML = `
+    <svg class="icon" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+    <span>${attachedFile.name}</span>
+    <button type="button" class="remove-attachment" aria-label="Remove attachment">
+      <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  `;
+  chip.querySelector(".remove-attachment").addEventListener("click", ()=>{
+    attachedFile = null;
+    renderAttachmentChip();
+  });
+}
+
+function handleAttachedFile(file){
+  if(!file) return;
+  if(!ATTACHMENT_EXT_PATTERN.test(file.name)){
+    alert(t("unsupportedFileType"));
+    return;
+  }
+  if(file.size > MAX_ATTACHMENT_BYTES){
+    alert(t("fileTooLarge"));
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    attachedFile = { name:file.name, content:e.target.result };
+    renderAttachmentChip();
+  };
+  reader.onerror = ()=> alert(t("fileReadError"));
+  reader.readAsText(file);
+}
+
+const fileInput = document.getElementById("fileInput");
+document.getElementById("attachBtn").addEventListener("click", ()=> fileInput.click());
+fileInput.addEventListener("change", (e)=>{
+  if(e.target.files.length) handleAttachedFile(e.target.files[0]);
+  fileInput.value = ""; // allow re-selecting the same file later
+});
+
+// Drag-and-drop straight onto the chat window
+const chatDropZone = document.getElementById("chat");
+chatDropZone.addEventListener("dragover", (e)=>{
+  e.preventDefault();
+  chatDropZone.classList.add("drag-over");
+});
+chatDropZone.addEventListener("dragleave", ()=>{
+  chatDropZone.classList.remove("drag-over");
+});
+chatDropZone.addEventListener("drop", (e)=>{
+  e.preventDefault();
+  chatDropZone.classList.remove("drag-over");
+  if(e.dataTransfer.files.length) handleAttachedFile(e.dataTransfer.files[0]);
+});
+
+// ============ CLOSE/REFRESH WARNING ============
+// Chat conversations only live in memory (see the note near `state`), so closing or
+// refreshing loses whatever's currently open. Only start warning once there's actually
+// something that would be lost, so a fresh, empty tab can still be closed without a prompt.
+let hasUnsavedChat = false;
+window.addEventListener("beforeunload", (e)=>{
+  if(!hasUnsavedChat) return;
+  e.preventDefault();
+  e.returnValue = "";
+});
+
+async function sendMessage(){
+  if(currentAbortController) return; // a reply is already in flight
+
+  const input = document.getElementById("message");
+  const text = input.value.trim();
+  if(!text && !attachedFile) return;
+
+  input.value = "";
+  updateInputMeta();
+  hasUnsavedChat = true;
+
+  const currentAttachment = attachedFile;
+  attachedFile = null;
+  renderAttachmentChip();
+
+  const visibleText = currentAttachment
+    ? `${text}${text ? "\n" : ""}📎 ${currentAttachment.name}`
+    : text;
+  addMessage(visibleText, "user");
+  playChime(660);
+  state.progress.messagesSent++;
+  state.lifetime.messages++;
+  recordStudyAction();
+  updateProgressView();
+
+  let questionContent = text || (currentAttachment ? `(No message — see attached file: ${currentAttachment.name})` : "");
+  if(currentAttachment){
+    questionContent += `\n\n[Attached file: ${currentAttachment.name}]\n---\n${currentAttachment.content}\n---`;
+  }
+
+  const session = currentSession();
+  const depth = DEPTH_CONFIG[state.responseDepth] ? state.responseDepth : "medium";
+  session.chatHistory.push({
+    role:"user",
+    content:`Student — Year: ${state.year} | Class: ${state.classType} | Mode: ${state.mode} | Response depth: ${depth} (${DEPTH_CONFIG[depth].instruction})\nInterface language: ${LANG_NAMES[state.lang]} — respond entirely in ${LANG_NAMES[state.lang]}, no matter what language this question is written in, unless explicitly told to switch.\n\nQuestion:\n${questionContent}`
+  });
+
+  await requestAiReply(session);
+}
+
+// Drops the last AI reply (from both the visible chat and chatHistory) and asks again
+// using the same trailing user message. No-ops if the last turn wasn't an assistant reply.
+async function regenerateLastResponse(){
+  if(currentAbortController) return;
+  const session = currentSession();
+  const history = session.chatHistory;
+  if(history.length === 0 || history[history.length - 1].role !== "assistant") return;
+
+  history.pop();
+  session.transcript.pop();
+  const chat = document.getElementById("chat");
+  if(chat.lastElementChild && chat.lastElementChild.classList.contains("ai")){
+    chat.lastElementChild.remove();
+  }
+
+  await requestAiReply(session);
+}
+
+document.getElementById("regenBtn").addEventListener("click", regenerateLastResponse);
+
+async function callOllama(messages, signal){
+  const response = await fetch(LOCAL_API_URL, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ messages, depth: state.responseDepth }),
+    signal
+  });
+  if(!response.ok){
+    throw new Error("Local Ollama server error: " + response.status);
+  }
+  const data = await response.json();
+  return data.content;
+}
+
+function extractJson(raw){
+  let cleaned = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
+  const start = cleaned.indexOf("[") === -1 ? cleaned.indexOf("{") : cleaned.indexOf("[");
+  const end = cleaned.lastIndexOf("]") === -1 ? cleaned.lastIndexOf("}") : cleaned.lastIndexOf("]");
+  if(start !== -1 && end !== -1) cleaned = cleaned.slice(start, end+1);
+  return JSON.parse(cleaned);
+}
+
+document.getElementById("message").addEventListener("keydown", (e)=>{
+  if(e.key === "Enter"){ sendMessage(); }
+});
+
+// Simple live character count under the input — most useful in Exam Prep, where students
+// often need to stay within a word/character budget similar to real QCAA response sheets.
+function updateInputMeta(){
+  const len = document.getElementById("message").value.length;
+  document.getElementById("inputMeta").textContent = len > 0 ? `${len} characters` : "";
+}
+document.getElementById("message").addEventListener("input", updateInputMeta);
+
+// ============ TEXT TO SPEECH ============
+function speak(text){
+  if(!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = SPEECH_LANGS[state.lang] || "en-US";
+  window.speechSynthesis.speak(utter);
+}
+
+// ============ CHAT SESSION MANAGEMENT ============
+function renderSessionTabs(){
+  const wrap = document.getElementById("sessionTabs");
+  wrap.innerHTML = "";
+  state.sessions.forEach(s=>{
+    const tab = document.createElement("div");
+    tab.className = "session-tab" + (s.id === state.currentSessionId ? " active" : "");
+
+    const label = document.createElement("span");
+    label.textContent = s.title;
+    tab.appendChild(label);
+
+    tab.addEventListener("click", ()=>{
+      state.currentSessionId = s.id;
+      renderSessionTabs();
+      renderChatFromSession();
+    });
+
+    // Only offer to close a tab when there's more than one — always leave at least one chat.
+    if(state.sessions.length > 1){
+      const closeBtn = document.createElement("button");
+      closeBtn.className = "session-tab-close";
+      closeBtn.setAttribute("aria-label", "Close chat");
+      closeBtn.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+      closeBtn.addEventListener("click", (e)=>{
+        e.stopPropagation();
+        closeSession(s.id);
+      });
+      tab.appendChild(closeBtn);
+    }
+
+    wrap.appendChild(tab);
+  });
+}
+
+function closeSession(sessionId){
+  const idx = state.sessions.findIndex(s=>s.id === sessionId);
+  if(idx === -1 || state.sessions.length <= 1) return;
+  state.sessions.splice(idx, 1);
+  if(state.currentSessionId === sessionId){
+    const nextIdx = Math.max(0, idx - 1);
+    state.currentSessionId = state.sessions[nextIdx].id;
+    renderChatFromSession();
+  }
+  renderSessionTabs();
+}
+
+document.getElementById("newChatBtn").addEventListener("click", ()=>{
+  const n = state.sessions.length + 1;
+  const session = newSessionObject(`${I18N[state.lang].sessionName} ${n}`);
+  state.sessions.push(session);
+  state.currentSessionId = session.id;
+  renderSessionTabs();
+  renderChatFromSession();
+});
+
+document.getElementById("clearChatBtn").addEventListener("click", ()=>{
+  if(!confirm(I18N[state.lang].clearConfirm)) return;
+  const session = currentSession();
+  session.chatHistory = [{ role:"system", content:SYSTEM_PROMPT }];
+  session.transcript = [{ type:"ai", text: I18N[state.lang].welcomeMessage }];
+  renderChatFromSession();
+});
+
+document.getElementById("exportChatBtn").addEventListener("click", ()=>{
+  const session = currentSession();
+  const lines = session.transcript.map(m => (m.type === "user" ? "You: " : "Tutor: ") + m.text);
+  const blob = new Blob([lines.join("\n\n")], { type:"text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = session.title.replace(/\s+/g,"_") + ".txt";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+
+// ---- Settings modal ----
+const overlay = document.getElementById("overlay");
+document.getElementById("settingsBtn").addEventListener("click", ()=>{ overlay.classList.add("open"); });
+document.getElementById("closeSettings").addEventListener("click", ()=>{ overlay.classList.remove("open"); });
+overlay.addEventListener("click", (e)=>{ if(e.target === overlay) overlay.classList.remove("open"); });
+
+// ---- Sidebar collapse (more room for chat on smaller screens / by preference) ----
+const sidebarEl = document.getElementById("sidebar");
+document.getElementById("sidebarCollapseBtn").addEventListener("click", ()=>{
+  sidebarEl.classList.toggle("collapsed");
+});
+
+// ---- Esc closes whichever overlay is open, from anywhere in the app ----
+document.addEventListener("keydown", (e)=>{
+  if(e.key !== "Escape") return;
+  document.querySelectorAll(".overlay.open").forEach(o=> o.classList.remove("open"));
+});
+
+// ---- Help modal ----
+const helpOverlay = document.getElementById("helpOverlay");
+document.getElementById("helpBtn").addEventListener("click", ()=>{ helpOverlay.classList.add("open"); });
+document.getElementById("closeHelp").addEventListener("click", ()=>{ helpOverlay.classList.remove("open"); });
+helpOverlay.addEventListener("click", (e)=>{ if(e.target === helpOverlay) helpOverlay.classList.remove("open"); });
+
+// ---- Accounts (local, multi-profile) ----
+// Stored separately from the streak/goal blob since accounts are their own concept —
+// a name, a year, and a class, saved so the same device can switch between profiles.
+const ACCOUNTS_KEY = "aiTutorAccounts";
+const CURRENT_ACCOUNT_KEY = "aiTutorCurrentAccount";
+
+function loadAccounts(){
+  try{
+    const raw = localStorage.getItem(ACCOUNTS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch(err){ return {}; }
+}
+function saveAccounts(accounts){
+  try{ localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts)); } catch(err){ /* ignore */ }
+}
+function accountKeyFor(name){ return name.trim().toLowerCase(); }
+
+const signInOverlay = document.getElementById("signInOverlay");
+const createAccountOverlay = document.getElementById("createAccountOverlay");
+const signInBtn = document.getElementById("signInBtn");
+const avatarBtn = document.getElementById("avatarBtn");
+const accountMenu = document.getElementById("accountMenu");
+
+function renderAccountList(){
+  const wrap = document.getElementById("accountList");
+  const note = document.getElementById("noAccountsNote");
+  const divider = document.getElementById("authDivider");
+  const accounts = loadAccounts();
+  const keys = Object.keys(accounts);
+  wrap.innerHTML = "";
+
+  if(keys.length === 0){
+    note.style.display = "block";
+    divider.style.display = "none";
+    return;
+  }
+  note.style.display = "none";
+  divider.style.display = "flex";
+
+  keys.forEach(key=>{
+    const acc = accounts[key];
+    const item = document.createElement("button");
+    item.className = "account-list-item";
+    item.innerHTML = `
+      <span class="avatar-circle">${acc.name.charAt(0).toUpperCase()}</span>
+      <span>
+        <div>${acc.name}</div>
+        <div class="acc-meta">${acc.year} · ${acc.classType}</div>
+      </span>
+    `;
+    item.addEventListener("click", ()=> signInAsAccount(key));
+    wrap.appendChild(item);
+  });
+}
+
+function applyAccountToUI(name){
+  signInBtn.style.display = "none";
+  avatarBtn.style.display = "flex";
+  document.getElementById("avatarInitial").textContent = name.charAt(0).toUpperCase();
+  document.getElementById("avatarName").textContent = name;
+}
+
+function signInAsAccount(key){
+  const accounts = loadAccounts();
+  const acc = accounts[key];
+  if(!acc) return;
+  state.user = { name:acc.name };
+  state.year = acc.year;
+  state.classType = acc.classType;
+  searchInput.value = `${acc.year} — ${acc.classType}`;
+  updateCurrentSelectionLabel();
+  renderTopicChips();
+  applyAccountToUI(acc.name);
+  try{ localStorage.setItem(CURRENT_ACCOUNT_KEY, key); } catch(err){ /* ignore */ }
+  signInOverlay.classList.remove("open");
+}
+
+function openSignInModal(){
+  createAccountOverlay.classList.remove("open");
+  renderAccountList();
+  signInOverlay.classList.add("open");
+}
+function openCreateAccountModal(){
+  signInOverlay.classList.remove("open");
+  document.getElementById("createAccountError").style.display = "none";
+  document.getElementById("createAccountName").value = "";
+  createAccountOverlay.classList.add("open");
+  document.getElementById("createAccountName").focus();
+}
+
+signInBtn.addEventListener("click", openSignInModal);
+signInOverlay.addEventListener("click", (e)=>{ if(e.target === signInOverlay) signInOverlay.classList.remove("open"); });
+createAccountOverlay.addEventListener("click", (e)=>{ if(e.target === createAccountOverlay) createAccountOverlay.classList.remove("open"); });
+document.getElementById("openCreateAccount").addEventListener("click", openCreateAccountModal);
+document.getElementById("openSignIn").addEventListener("click", openSignInModal);
+
+// Guest sign-in: personalizes the session for now, but isn't saved to this device's account list.
+function completeSignIn(){
+  const nameInput = document.getElementById("signInName");
+  const name = nameInput.value.trim();
+  if(!name) return;
+  state.user = { name };
+  applyAccountToUI(name);
+  signInOverlay.classList.remove("open");
+  nameInput.value = "";
+}
+document.getElementById("confirmSignIn").addEventListener("click", completeSignIn);
+document.getElementById("signInName").addEventListener("keydown", (e)=>{ if(e.key === "Enter") completeSignIn(); });
+
+// Populate the year/class selects in the Create Account modal once, from the same lists
+// the chat's search bar uses, so they always stay in sync.
+const createYearSelect = document.getElementById("createAccountYear");
+const createClassSelect = document.getElementById("createAccountClass");
+YEARS.forEach(y=>{
+  const opt = document.createElement("option");
+  opt.value = y; opt.textContent = y;
+  createYearSelect.appendChild(opt);
+});
+CLASSES.forEach(c=>{
+  const opt = document.createElement("option");
+  opt.value = c; opt.textContent = c;
+  createClassSelect.appendChild(opt);
+});
+createYearSelect.value = state.year;
+createClassSelect.value = state.classType;
+
+document.getElementById("confirmCreateAccount").addEventListener("click", ()=>{
+  const errorEl = document.getElementById("createAccountError");
+  const name = document.getElementById("createAccountName").value.trim();
+  if(!name){
+    errorEl.textContent = t("accountNameRequired");
+    errorEl.style.display = "block";
+    return;
+  }
+  const key = accountKeyFor(name);
+  const accounts = loadAccounts();
+  if(accounts[key]){
+    errorEl.textContent = t("accountExistsError");
+    errorEl.style.display = "block";
+    return;
+  }
+  accounts[key] = { name, year:createYearSelect.value, classType:createClassSelect.value };
+  saveAccounts(accounts);
+  signInAsAccount(key);
+  createAccountOverlay.classList.remove("open");
+});
+
+avatarBtn.addEventListener("click", (e)=>{
+  e.stopPropagation();
+  accountMenu.classList.toggle("open");
+});
+document.getElementById("signOutBtn").addEventListener("click", ()=>{
+  state.user = null;
+  signInBtn.style.display = "flex";
+  avatarBtn.style.display = "none";
+  accountMenu.classList.remove("open");
+  try{ localStorage.removeItem(CURRENT_ACCOUNT_KEY); } catch(err){ /* ignore */ }
+});
+document.addEventListener("click", (e)=>{
+  if(!e.target.closest(".avatar-btn") && !e.target.closest(".account-menu")) accountMenu.classList.remove("open");
+});
+
+// Auto sign-in on load if this device remembers a current account (persists across reloads).
+function tryAutoSignIn(){
+  try{
+    const key = localStorage.getItem(CURRENT_ACCOUNT_KEY);
+    if(!key) return;
+    const accounts = loadAccounts();
+    if(accounts[key]) signInAsAccount(key);
+  } catch(err){ /* ignore */ }
+}
+
+function refreshSwatchSelection(){
+  document.querySelectorAll(".swatch").forEach(s=>{
+    s.classList.toggle("selected", s.getAttribute("data-theme") === state.theme);
+  });
+}
+document.querySelectorAll(".swatch").forEach(swatch=>{
+  swatch.addEventListener("click", ()=>{
+    state.theme = swatch.getAttribute("data-theme");
+    document.body.setAttribute("data-theme", state.theme);
+    document.body.style.removeProperty("--bg");
+    document.body.style.removeProperty("--panel");
+    document.body.style.removeProperty("--panel-2");
+    document.body.style.removeProperty("--border");
+    document.body.style.removeProperty("--accent");
+    document.body.style.removeProperty("--accent-2");
+    refreshSwatchSelection();
+  });
+});
+const customThemeDefaults = { bg:"#100b1c", panel:"#191229", accent:"#a879ff" };
+const customBgColor = document.getElementById("customBgColor");
+const customPanelColor = document.getElementById("customPanelColor");
+const customAccentColor = document.getElementById("customAccentColor");
+function applyCustomTheme(){
+  const root = document.body;
+  const bg = customBgColor.value;
+  const panel = customPanelColor.value;
+  const accent = customAccentColor.value;
+  root.setAttribute("data-theme", "custom");
+  root.style.setProperty("--bg", bg);
+  root.style.setProperty("--panel", panel);
+  root.style.setProperty("--panel-2", accent + "22");
+  root.style.setProperty("--border", accent + "55");
+  root.style.setProperty("--accent", accent);
+  root.style.setProperty("--accent-2", accent);
+  root.style.setProperty("--ai-bubble", panel);
+  root.style.setProperty("--user-bubble", accent);
+  root.style.setProperty("--user-text", "#ffffff");
+  root.style.setProperty("--text", "#f7f3ff");
+  root.style.setProperty("--text-muted", "#c0b4d6");
+  state.theme = "custom";
+  refreshSwatchSelection();
+}
+document.getElementById("applyCustomTheme").addEventListener("click", applyCustomTheme);
+refreshSwatchSelection();
+
+document.getElementById("languageSelect").addEventListener("change", (e)=>{
+  state.lang = e.target.value;
+  applyTranslations();
+});
+
+document.getElementById("fontSelect").addEventListener("change", (e)=>{
+  state.font = e.target.value;
+  document.body.classList.toggle("dyslexic-font", state.font === "dyslexic");
+});
+
+document.getElementById("fontSizeSelect").addEventListener("change", (e)=>{
+  state.fontSize = e.target.value;
+  document.documentElement.style.fontSize = FONT_SIZES[state.fontSize];
+});
+
+const CONTRAST_LEVELS = ["off","medium","high"];
+function applyContrastLevel(index){
+  state.contrastLevel = CONTRAST_LEVELS[index];
+  document.body.setAttribute("data-contrast", state.contrastLevel);
+  document.querySelectorAll(".contrast-scale-labels span").forEach(span=>{
+    span.classList.toggle("active", span.getAttribute("data-level") === String(index));
+  });
+}
+document.getElementById("contrastSlider").addEventListener("input", (e)=>{
+  applyContrastLevel(parseInt(e.target.value));
+});
+applyContrastLevel(0);
+
+document.getElementById("autoSpeakToggle").addEventListener("change", (e)=>{
+  state.autoSpeak = e.target.checked;
+});
+
+document.getElementById("densitySelect").addEventListener("change", (e)=>{
+  state.density = e.target.value;
+  document.getElementById("chat").classList.toggle("compact", state.density === "compact");
+  saveStreakData();
+});
+
+document.getElementById("timestampsToggle").addEventListener("change", (e)=>{
+  state.showTimestamps = e.target.checked;
+  saveStreakData();
+  renderChatFromSession();
+});
+
+document.getElementById("soundEffectsToggle").addEventListener("change", (e)=>{
+  state.soundEffects = e.target.checked;
+  saveStreakData();
+});
+
+// Tiny beep via Web Audio — no audio files to host, and it's silent unless the setting is on.
+function playChime(freq){
+  if(!state.soundEffects) return;
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.frequency.value = freq;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.18);
+  } catch(err){ /* Web Audio unavailable — fail silently */ }
+}
+
+document.getElementById("exportDataBtn").addEventListener("click", ()=>{
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    user: state.user,
+    streak: state.streak,
+    goal: state.goal,
+    lifetime: state.lifetime,
+    activityLog: state.activityLog
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type:"application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "ai-tutor-progress-backup.json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById("resetProgressBtn").addEventListener("click", ()=>{
+  if(!confirm(t("resetConfirm"))) return;
+  state.streak = { count:0, lastActiveDate:null };
+  state.goal = { target:10, progress:0, date:null, reachedToday:false };
+  state.lifetime = { messages:0, flashcardsKnown:0, quizzesTaken:0, quizzesPerfect:0, goalDaysReached:0 };
+  state.activityLog = {};
+  saveStreakData();
+  updateProgressView();
+  renderBadges();
+  renderHeatmap();
+});
+
+// Compact quick-select for response depth, now living next to the message box so it can
+// be changed per-question without opening Settings. Built from DEPTH_CONFIG so the two
+// stay in sync automatically.
+const DEPTH_SHORT_LABELS = { low:"depthLowShort", medium:"depthMediumShort", high:"depthHighShort", thinker:"depthThinkerShort" };
+function populateDepthQuickSelect(){
+  const select = document.getElementById("depthQuickSelect");
+  const prevValue = select.value || state.responseDepth;
+  select.innerHTML = "";
+  Object.keys(DEPTH_CONFIG).forEach(key=>{
+    const opt = document.createElement("option");
+    opt.value = key;
+    opt.textContent = t(DEPTH_SHORT_LABELS[key]);
+    select.appendChild(opt);
+  });
+  select.value = prevValue;
+}
+document.getElementById("depthQuickSelect").addEventListener("change", (e)=>{
+  state.responseDepth = e.target.value;
+  saveStreakData();
+});
+
+// ---- Year & Class search bar ----
+const searchInput = document.getElementById("profileSearch");
+const suggestionsBox = document.getElementById("suggestions");
+const COMBOS = [];
+YEARS.forEach(y => CLASSES.forEach(c => COMBOS.push({ year:y, classType:c })));
+
+// One click to drop the fixed-subject constraint entirely — keeps the current year (so
+// the AI still calibrates difficulty) but lets the student ask about literally anything.
+document.getElementById("anyTopicBtn").addEventListener("click", ()=>{
+  state.classType = "Any Topic";
+  searchInput.value = `${state.year} — Any Topic`;
+  suggestionsBox.classList.remove("open");
+  updateCurrentSelectionLabel();
+  renderTopicChips();
+});
+
+function renderSuggestions(query){
+  const q = query.trim().toLowerCase();
+  let matches;
+  if(!q){
+    matches = COMBOS.slice(0, 8);
+  } else {
+    matches = COMBOS.filter(c =>
+      c.year.toLowerCase().includes(q) ||
+      c.classType.toLowerCase().includes(q) ||
+      (c.year + " " + c.classType).toLowerCase().includes(q)
+    ).slice(0, 8);
+  }
+  suggestionsBox.innerHTML = "";
+  if(matches.length === 0){ suggestionsBox.classList.remove("open"); return; }
+  matches.forEach(m=>{
+    const row = document.createElement("div");
+    row.className = "suggestion";
+    row.innerHTML = `<span>${m.classType}</span><span class="yr">${m.year}</span>`;
+    row.addEventListener("click", ()=>{
+      state.year = m.year;
+      state.classType = m.classType;
+      searchInput.value = `${m.year} — ${m.classType}`;
+      suggestionsBox.classList.remove("open");
+      updateCurrentSelectionLabel();
+      renderTopicChips();
+    });
+    suggestionsBox.appendChild(row);
+  });
+  suggestionsBox.classList.add("open");
+}
+searchInput.addEventListener("focus", ()=> renderSuggestions(searchInput.value));
+searchInput.addEventListener("input", ()=> renderSuggestions(searchInput.value));
+document.addEventListener("click", (e)=>{
+  if(!e.target.closest(".search-wrap")) suggestionsBox.classList.remove("open");
+});
+
+// ============ FLASHCARDS ============
+document.getElementById("genFlashcardsBtn").addEventListener("click", generateFlashcards);
+document.getElementById("flashcardTopic").addEventListener("keydown", (e)=>{ if(e.key === "Enter") generateFlashcards(); });
+
+async function generateFlashcards(){
+  const topicInput = document.getElementById("flashcardTopic");
+  const topic = topicInput.value.trim();
+  if(!topic) return;
+
+  const stage = document.getElementById("flashcardStage");
+  const btn = document.getElementById("genFlashcardsBtn");
+  btn.disabled = true;
+  btn.textContent = I18N[state.lang].generatingText;
+  stage.innerHTML = `<div class="empty-state">${I18N[state.lang].generatingText}</div>`;
+
+  try{
+    const messages = [
+      { role:"system", content:`You generate flashcards for Australian QCAA students. Respond ONLY with a raw JSON array, no markdown, no commentary. Each item: {"front": "...", "back": "..."}. Generate exactly 8 concise flashcards for the given topic, appropriate for ${state.year} ${state.classType}. Write every "front" and "back" value entirely in ${LANG_NAMES[state.lang]}, regardless of what language the topic below is written in. Format any math using LaTeX (inline: $...$, block: $$...$$, e.g. $\\frac{1}{2}$, $x^2$) rather than plain-text ASCII.` },
+      { role:"user", content:`Topic: ${topic}` }
+    ];
+    const raw = await callOllama(messages);
+    const cards = extractJson(raw);
+    state.flashcards = { deck:cards, index:0, flipped:false };
+    hasUnsavedChat = true;
+    state.progress.flashcardsReviewed += 0;
+    renderFlashcard();
+  } catch(err){
+    stage.innerHTML = `<div class="empty-state">${I18N[state.lang].flashcardsError}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = I18N[state.lang].generateBtn;
+  }
+}
+
+function renderFlashcard(){
+  const stage = document.getElementById("flashcardStage");
+  const deck = state.flashcards.deck;
+  if(!deck || deck.length === 0){
+    stage.innerHTML = `<div class="empty-state">${I18N[state.lang].flashcardsEmpty}</div>`;
+    return;
+  }
+  const idx = state.flashcards.index;
+  const card = deck[idx];
+
+  stage.innerHTML = `
+    <div class="flashcard" id="flashcardEl">
+      <div class="flashcard-inner">
+        <div class="card-face front">${card.front}</div>
+        <div class="card-face back">${card.back}</div>
+      </div>
+    </div>
+    <div class="flashcard-progress">${t("cardOf",{ n:idx+1, total:deck.length })}</div>
+    <div class="flashcard-controls">
+      <button class="review-btn" id="reviewBtn">${I18N[state.lang].reviewBtn}</button>
+      <button class="know-btn" id="knowBtn">${I18N[state.lang].knowBtn}</button>
+    </div>
+  `;
+
+  const cardEl = document.getElementById("flashcardEl");
+  cardEl.addEventListener("click", ()=> cardEl.classList.toggle("flipped"));
+  renderMath(stage);
+
+  document.getElementById("knowBtn").addEventListener("click", (e)=>{
+    e.stopPropagation();
+    state.progress.flashcardsKnown++;
+    state.progress.flashcardsReviewed++;
+    state.lifetime.flashcardsKnown++;
+    recordStudyAction();
+    advanceFlashcard();
+  });
+  document.getElementById("reviewBtn").addEventListener("click", (e)=>{
+    e.stopPropagation();
+    state.progress.flashcardsReviewed++;
+    recordStudyAction();
+    advanceFlashcard();
+  });
+}
+
+function advanceFlashcard(){
+  const deck = state.flashcards.deck;
+  state.flashcards.index = (state.flashcards.index + 1) % deck.length;
+  updateProgressView();
+  renderFlashcard();
+}
+
+// ============ QUIZ ============
+document.getElementById("genQuizBtn").addEventListener("click", generateQuiz);
+document.getElementById("quizTopic").addEventListener("keydown", (e)=>{ if(e.key === "Enter") generateQuiz(); });
+
+async function generateQuiz(){
+  const topicInput = document.getElementById("quizTopic");
+  const topic = topicInput.value.trim();
+  if(!topic) return;
+
+  const stage = document.getElementById("quizStage");
+  const btn = document.getElementById("genQuizBtn");
+  btn.disabled = true;
+  btn.textContent = I18N[state.lang].generatingText;
+  stage.innerHTML = `<div class="empty-state">${I18N[state.lang].generatingText}</div>`;
+
+  try{
+    const messages = [
+      { role:"system", content:`You generate multiple-choice quizzes for Australian QCAA students. Respond ONLY with a raw JSON array, no markdown, no commentary. Each item: {"question": "...", "options": ["...","...","...","..."], "answerIndex": 0, "explanation": "..."}. Generate exactly 5 questions appropriate for ${state.year} ${state.classType}. Write every question, option, and explanation entirely in ${LANG_NAMES[state.lang]}, regardless of what language the topic below is written in. Format any math using LaTeX (inline: $...$, block: $$...$$, e.g. $\\frac{1}{2}$, $x^2$) rather than plain-text ASCII.` },
+      { role:"user", content:`Topic: ${topic}` }
+    ];
+    const raw = await callOllama(messages);
+    const questions = extractJson(raw);
+    state.quiz = { questions, index:0, score:0, answered:false, finished:false };
+    hasUnsavedChat = true;
+    state.progress.quizzesTaken++;
+    state.lifetime.quizzesTaken++;
+    saveStreakData();
+    updateProgressView();
+    renderQuiz();
+  } catch(err){
+    stage.innerHTML = `<div class="empty-state">${I18N[state.lang].quizError}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = I18N[state.lang].generateBtn;
+  }
+}
+
+function renderQuiz(){
+  const stage = document.getElementById("quizStage");
+  const quiz = state.quiz;
+
+  if(!quiz.questions || quiz.questions.length === 0){
+    stage.innerHTML = `<div class="empty-state">${I18N[state.lang].quizEmpty}</div>`;
+    return;
+  }
+
+  if(quiz.finished){
+    stage.innerHTML = `
+      <div class="quiz-result">
+        <div class="big">${quiz.score}/${quiz.questions.length}</div>
+        <div>${t("quizResultScore",{ score:quiz.score, total:quiz.questions.length })}</div>
+        <br>
+        <button class="primary-btn" id="tryAnotherBtn">${I18N[state.lang].tryAnotherBtn}</button>
+      </div>
+    `;
+    document.getElementById("tryAnotherBtn").addEventListener("click", ()=>{
+      state.quiz = { questions:[], index:0, score:0, answered:false, finished:false };
+      document.getElementById("quizTopic").value = "";
+      renderQuiz();
+    });
+    return;
+  }
+
+  const q = quiz.questions[quiz.index];
+  const optionsHtml = q.options.map((opt,i) =>
+    `<button class="quiz-option" data-index="${i}">${opt}</button>`
+  ).join("");
+
+  stage.innerHTML = `
+    <div class="quiz-question">${q.question}</div>
+    <div class="quiz-options">${optionsHtml}</div>
+    <div id="quizExplanation"></div>
+    <div class="quiz-footer">
+      <div class="quiz-score">${t("questionOf",{ n:quiz.index+1, total:quiz.questions.length })}</div>
+      <button class="primary-btn" id="quizNextBtn" style="display:none">${I18N[state.lang].nextBtn}</button>
+    </div>
+  `;
+  renderMath(stage);
+
+  document.querySelectorAll(".quiz-option").forEach(optBtn=>{
+    optBtn.addEventListener("click", ()=>{
+      if(quiz.answered) return;
+      quiz.answered = true;
+      const chosen = parseInt(optBtn.getAttribute("data-index"));
+      const correct = q.answerIndex;
+
+      document.querySelectorAll(".quiz-option").forEach(b=>b.disabled = true);
+      optBtn.classList.add(chosen === correct ? "correct" : "incorrect");
+      if(chosen !== correct){
+        document.querySelector(`.quiz-option[data-index="${correct}"]`).classList.add("correct");
+      } else {
+        quiz.score++;
+      }
+      state.progress.quizQuestionsAnswered++;
+      if(chosen === correct) state.progress.quizCorrect++;
+      recordStudyAction();
+      updateProgressView();
+
+      if(q.explanation){
+        const explEl = document.getElementById("quizExplanation");
+        explEl.innerHTML = `<div class="quiz-explanation">${q.explanation}</div>`;
+        renderMath(explEl);
+      }
+      document.getElementById("quizNextBtn").style.display = "inline-flex";
+    });
+  });
+
+  document.getElementById("quizNextBtn").addEventListener("click", ()=>{
+    if(quiz.index + 1 >= quiz.questions.length){
+      quiz.finished = true;
+      if(quiz.score === quiz.questions.length){
+        state.lifetime.quizzesPerfect++;
+      }
+      saveStreakData();
+      renderBadges();
+    } else {
+      quiz.index++;
+      quiz.answered = false;
+    }
+    renderQuiz();
+  });
+}
+
+// ============ PRACTICE TEST ============
+function ptPopulateDurationOptions(){
+  const select = document.getElementById("ptDuration");
+  const prevValue = select.value || "20";
+  select.innerHTML = "";
+  [10, 20, 30, 40].forEach(min=>{
+    const opt = document.createElement("option");
+    opt.value = min;
+    opt.textContent = `${min} ${t("minutesAbbrev")}`;
+    select.appendChild(opt);
+  });
+  select.value = prevValue;
+}
+
+document.getElementById("ptStartBtn").addEventListener("click", ptGenerate);
+document.getElementById("ptTopic").addEventListener("keydown", (e)=>{ if(e.key === "Enter") ptGenerate(); });
+
+async function ptGenerate(){
+  const topic = document.getElementById("ptTopic").value.trim();
+  if(!topic) return;
+
+  const numQuestions = parseInt(document.getElementById("ptNumQuestions").value);
+  const duration = parseInt(document.getElementById("ptDuration").value);
+  const btn = document.getElementById("ptStartBtn");
+  btn.disabled = true;
+  btn.textContent = I18N[state.lang].generatingText;
+
+  try{
+    const subjectNote = state.classType === "Any Topic"
+      ? "no fixed subject — infer the subject from the topic below"
+      : state.classType;
+    const messages = [
+      { role:"system", content:`You generate QCAA-style written-response practice test questions. Respond ONLY with a raw JSON array, no markdown, no commentary. Each item: {"question": "...", "marks": <integer 1-6>}. Generate exactly ${numQuestions} exam-style questions appropriate for ${state.year}, ${subjectNote}, testing understanding of the given topic with a realistic mix of short-answer and extended-response questions and varying mark allocations. Write everything entirely in ${LANG_NAMES[state.lang]}. Format any math using LaTeX (inline: $...$, block: $$...$$, e.g. $\\frac{1}{2}$, $x^2$) rather than plain-text ASCII.` },
+      { role:"user", content:`Topic: ${topic}` }
+    ];
+    const raw = await callOllama(messages);
+    const questions = extractJson(raw);
+
+    state.practiceTest = {
+      status:"active",
+      questions,
+      answers: new Array(questions.length).fill(""),
+      index:0,
+      durationMinutes: duration,
+      secondsRemaining: duration * 60,
+      timerId: null,
+      results: null
+    };
+    hasUnsavedChat = true;
+    ptStartTimer();
+    ptRenderActive();
+  } catch(err){
+    alert(t("ptError"));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = I18N[state.lang].ptStartBtn;
+  }
+}
+
+function ptStartTimer(){
+  clearInterval(state.practiceTest.timerId);
+  state.practiceTest.timerId = setInterval(()=>{
+    state.practiceTest.secondsRemaining--;
+    ptUpdateTimerDisplay();
+    if(state.practiceTest.secondsRemaining <= 0){
+      clearInterval(state.practiceTest.timerId);
+      ptSubmit(true);
+    }
+  }, 1000);
+  ptUpdateTimerDisplay();
+}
+
+function ptUpdateTimerDisplay(){
+  const el = document.getElementById("ptTimer");
+  if(!el) return;
+  const s = Math.max(0, state.practiceTest.secondsRemaining);
+  const mm = String(Math.floor(s / 60)).padStart(2, "0");
+  const ss = String(s % 60).padStart(2, "0");
+  el.textContent = `${mm}:${ss}`;
+  el.classList.toggle("pt-timer-low", s <= 60);
+}
+
+function ptSaveCurrentAnswer(){
+  const input = document.getElementById("ptAnswerInput");
+  if(input) state.practiceTest.answers[state.practiceTest.index] = input.value;
+}
+
+function ptRenderActive(){
+  document.getElementById("ptSetup").style.display = "none";
+  document.getElementById("ptResults").style.display = "none";
+  document.getElementById("ptActive").style.display = "block";
+
+  const pt = state.practiceTest;
+  const q = pt.questions[pt.index];
+  document.getElementById("ptQuestionMeta").textContent =
+    `${t("questionOf", { n:pt.index + 1, total:pt.questions.length })} · ${q.marks} ${q.marks === 1 ? "mark" : "marks"}`;
+  const qTextEl = document.getElementById("ptQuestionText");
+  qTextEl.textContent = q.question;
+  renderMath(qTextEl);
+  document.getElementById("ptAnswerInput").value = pt.answers[pt.index] || "";
+  document.getElementById("ptPrevBtn").disabled = pt.index === 0;
+  document.getElementById("ptNextBtn").textContent = pt.index === pt.questions.length - 1 ? t("ptSubmitBtn") : t("ptNextBtn");
+  ptRenderDots();
+}
+
+function ptRenderDots(){
+  const wrap = document.getElementById("ptDots");
+  wrap.innerHTML = "";
+  state.practiceTest.questions.forEach((q, i)=>{
+    const dot = document.createElement("button");
+    dot.type = "button";
+    dot.className = "pt-dot"
+      + (i === state.practiceTest.index ? " current" : "")
+      + ((state.practiceTest.answers[i] || "").trim() ? " answered" : "");
+    dot.setAttribute("aria-label", `Question ${i + 1}`);
+    dot.addEventListener("click", ()=>{
+      ptSaveCurrentAnswer();
+      state.practiceTest.index = i;
+      ptRenderActive();
+    });
+    wrap.appendChild(dot);
+  });
+}
+
+document.getElementById("ptPrevBtn").addEventListener("click", ()=>{
+  ptSaveCurrentAnswer();
+  if(state.practiceTest.index > 0){
+    state.practiceTest.index--;
+    ptRenderActive();
+  }
+});
+
+document.getElementById("ptNextBtn").addEventListener("click", ()=>{
+  ptSaveCurrentAnswer();
+  if(state.practiceTest.index < state.practiceTest.questions.length - 1){
+    state.practiceTest.index++;
+    ptRenderActive();
+  } else {
+    ptConfirmSubmit();
+  }
+});
+
+document.getElementById("ptSubmitBtn").addEventListener("click", ptConfirmSubmit);
+
+function ptConfirmSubmit(){
+  ptSaveCurrentAnswer();
+  if(!confirm(t("ptSubmitConfirm"))) return;
+  ptSubmit(false);
+}
+
+async function ptSubmit(autoSubmitted){
+  clearInterval(state.practiceTest.timerId);
+  ptSaveCurrentAnswer();
+  document.getElementById("ptActive").style.display = "none";
+  const resultsEl = document.getElementById("ptResults");
+  resultsEl.innerHTML = `<div class="empty-state">${t("ptGradingText")}</div>`;
+  resultsEl.style.display = "block";
+
+  const pt = state.practiceTest;
+  try{
+    const gradingPayload = pt.questions.map((q, i)=>({
+      question:q.question,
+      marks:q.marks,
+      studentAnswer: pt.answers[i] && pt.answers[i].trim() ? pt.answers[i] : "(No answer given)"
+    }));
+    const messages = [
+      { role:"system", content:`You are grading a QCAA-style practice test. You will receive a JSON array of {question, marks, studentAnswer}. Respond ONLY with a raw JSON array, no markdown, no commentary, with exactly one item per question in the same order: {"score": <integer, 0 to marks>, "feedback": "..."}. Be fair but rigorous, similar to typical QCAA marking criteria. Keep feedback to 1-3 sentences per question, explaining what earned or lost marks. Write all feedback entirely in ${LANG_NAMES[state.lang]}. Format any math using LaTeX (inline: $...$, block: $$...$$) rather than plain-text ASCII.` },
+      { role:"user", content: JSON.stringify(gradingPayload) }
+    ];
+    const raw = await callOllama(messages);
+    const results = extractJson(raw);
+
+    pt.results = results;
+    pt.status = "finished";
+    state.lifetime.practiceTestsTaken = (state.lifetime.practiceTestsTaken || 0) + 1;
+    const totalScore = results.reduce((sum, r)=> sum + (r.score || 0), 0);
+    const totalMarks = pt.questions.reduce((sum, q)=> sum + (q.marks || 0), 0);
+    if(totalMarks > 0 && totalScore === totalMarks){
+      state.lifetime.practiceTestsPerfect = (state.lifetime.practiceTestsPerfect || 0) + 1;
+    }
+    saveStreakData();
+    recordStudyAction();
+    updateProgressView();
+    renderBadges();
+    ptRenderResults(autoSubmitted);
+  } catch(err){
+    resultsEl.innerHTML = `<div class="empty-state">${t("ptError")}</div>`;
+  }
+}
+
+function ptRenderResults(autoSubmitted){
+  const pt = state.practiceTest;
+  const totalScore = pt.results.reduce((sum, r)=> sum + (r.score || 0), 0);
+  const totalMarks = pt.questions.reduce((sum, q)=> sum + (q.marks || 0), 0);
+
+  let html = `
+    ${autoSubmitted ? `<p class="settings-note">${t("ptAutoSubmitNotice")}</p>` : ""}
+    <div class="quiz-result">
+      <div class="big">${totalScore}/${totalMarks}</div>
+      <div>${t("ptOverallScoreLabel")}</div>
+    </div>
+  `;
+  pt.questions.forEach((q, i)=>{
+    const r = pt.results[i] || { score:0, feedback:"" };
+    const answerText = (pt.answers[i] || "").trim() || "—";
+    html += `
+      <div class="pt-review-card">
+        <div class="pt-question-meta">${t("questionOf", { n:i + 1, total:pt.questions.length })} · ${r.score}/${q.marks}</div>
+        <div class="pt-question-text">${q.question}</div>
+        <div class="pt-your-answer"><strong>${t("yourAnswerLabel")}:</strong> ${answerText}</div>
+        <div class="quiz-explanation">${r.feedback || ""}</div>
+      </div>
+    `;
+  });
+  html += `<button class="primary-btn" id="ptRetakeBtn">${t("ptRetakeBtn")}</button>`;
+
+  const wrap = document.getElementById("ptResults");
+  wrap.innerHTML = html;
+  renderMath(wrap);
+  document.getElementById("ptRetakeBtn").addEventListener("click", ()=>{
+    state.practiceTest = { status:"setup", questions:[], answers:[], index:0, durationMinutes:20, secondsRemaining:0, timerId:null, results:null };
+    document.getElementById("ptTopic").value = "";
+    document.getElementById("ptSetup").style.display = "block";
+    document.getElementById("ptResults").style.display = "none";
+  });
+}
+
+// ============ PROGRESS ============
+
+
+function updateProgressView(){
+  const p = state.progress;
+  document.getElementById("statMessages").textContent = p.messagesSent;
+  document.getElementById("statFlashcards").textContent = `${p.flashcardsKnown} / ${p.flashcardsReviewed}`;
+  document.getElementById("statQuizzes").textContent = p.quizzesTaken;
+
+  const flashPct = p.flashcardsReviewed ? Math.round((p.flashcardsKnown / p.flashcardsReviewed) * 100) : 0;
+  document.getElementById("barFlashcards").style.width = flashPct + "%";
+
+  const accPct = p.quizQuestionsAnswered ? Math.round((p.quizCorrect / p.quizQuestionsAnswered) * 100) : null;
+  document.getElementById("statAccuracy").textContent = accPct === null ? "—" : accPct + "%";
+  document.getElementById("barAccuracy").style.width = (accPct || 0) + "%";
+
+  document.getElementById("statPracticeTests").textContent = state.lifetime.practiceTestsTaken || 0;
+
+  updateStreakUI();
+  updateGoalUI();
+}
+
+// ============ DAILY STREAK & GOAL ============
+const STORAGE_KEY = "aiTutorStreakData";
+
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function daysBetween(a, b){
+  return Math.round((new Date(b) - new Date(a)) / 86400000);
+}
+
+function loadStreakData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const data = JSON.parse(raw);
+    if(data.streak) state.streak = data.streak;
+    if(data.goal) state.goal = data.goal;
+    if(data.lifetime) state.lifetime = data.lifetime;
+    if(data.activityLog) state.activityLog = data.activityLog;
+    if(typeof data.remindersEnabled === "boolean") state.remindersEnabled = data.remindersEnabled;
+    if(data.responseDepth && DEPTH_CONFIG[data.responseDepth]) state.responseDepth = data.responseDepth;
+    if(data.density === "compact" || data.density === "comfortable") state.density = data.density;
+    if(typeof data.showTimestamps === "boolean") state.showTimestamps = data.showTimestamps;
+    if(typeof data.soundEffects === "boolean") state.soundEffects = data.soundEffects;
+  } catch(err){
+    // localStorage unavailable in this preview environment — everything stays in-memory for this session only
+  }
+}
+
+function saveStreakData(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      streak:state.streak, goal:state.goal, lifetime:state.lifetime,
+      activityLog:state.activityLog, remindersEnabled:state.remindersEnabled,
+      responseDepth:state.responseDepth, density:state.density,
+      showTimestamps:state.showTimestamps, soundEffects:state.soundEffects
+    }));
+  } catch(err){
+    // silently ignore — sandboxed preview environments block storage
+  }
+}
+
+// call this whenever the student does something study-related (send a message,
+// review a flashcard, answer a quiz question)
+function recordStudyAction(){
+  const today = todayStr();
+
+  if(state.streak.lastActiveDate !== today){
+    if(state.streak.lastActiveDate && daysBetween(state.streak.lastActiveDate, today) === 1){
+      state.streak.count += 1;
+    } else {
+      state.streak.count = 1;
+    }
+    state.streak.lastActiveDate = today;
+  }
+
+  if(state.goal.date !== today){
+    state.goal.date = today;
+    state.goal.progress = 0;
+    state.goal.reachedToday = false;
+  }
+  state.goal.progress += 1;
+  if(!state.goal.reachedToday && state.goal.progress >= state.goal.target){
+    state.goal.reachedToday = true;
+    state.lifetime.goalDaysReached += 1;
+  }
+
+  state.activityLog[today] = (state.activityLog[today] || 0) + 1;
+
+  saveStreakData();
+  updateStreakUI();
+  updateGoalUI();
+  renderBadges();
+  renderHeatmap();
+  hideReminderBanner();
+}
+
+function updateStreakUI(){
+  const today = todayStr();
+  // if a day (or more) has passed with no activity, reflect that the streak is at risk/reset visually
+  let displayCount = state.streak.count;
+  if(state.streak.lastActiveDate && state.streak.lastActiveDate !== today &&
+     daysBetween(state.streak.lastActiveDate, today) > 1){
+    displayCount = 0;
+  }
+  document.getElementById("streakValue").textContent = displayCount;
+  document.getElementById("topbarStreakValue").textContent = displayCount;
+}
+
+function updateGoalUI(){
+  const today = todayStr();
+  const progress = state.goal.date === today ? state.goal.progress : 0;
+  const target = state.goal.target;
+  document.getElementById("goalValue").textContent = `${progress} / ${target}`;
+  document.getElementById("goalInput").value = target;
+  const pct = Math.min(100, Math.round((progress / target) * 100));
+  const bar = document.getElementById("barGoal");
+  bar.style.width = pct + "%";
+  bar.classList.toggle("reached", progress >= target);
+}
+
+document.getElementById("setGoalBtn").addEventListener("click", ()=>{
+  const val = parseInt(document.getElementById("goalInput").value);
+  if(val && val > 0){
+    state.goal.target = val;
+    saveStreakData();
+    updateGoalUI();
+  }
+});
+
+document.getElementById("topbarStreak").addEventListener("click", ()=>{
+  setView("progress", document.querySelector('.sidebtn[data-view="progress"]'));
+});
+
+// ============ ACHIEVEMENT BADGES ============
+const BADGES = [
+  { id:"first_steps", icon:'<circle cx="12" cy="12" r="9"/><path d="M8 12h8"/><path d="M8 16h5"/><path d="M8 8h8"/>',
+    check: s => s.lifetime.messages >= 1 },
+  { id:"quiz_whiz", icon:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.8 1c0 1.7-2.3 2-2.3 3.5"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+    check: s => s.lifetime.quizzesTaken >= 5 },
+  { id:"card_master", icon:'<rect x="2" y="6" width="15" height="12" rx="2"/><path d="M7 3h13a2 2 0 0 1 2 2v10"/>',
+    check: s => s.lifetime.flashcardsKnown >= 25 },
+  { id:"on_fire", icon:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 17a2.5 2.5 0 0 0 2.5-2.5c0-1.5-1.5-2-1-3.5-1.5.5-3 2-3 3.5z"/><path d="M12 2c-2 5-6 6-6 11a6 6 0 0 0 6 6 6 6 0 0 0 6-6c0-1-.5-2-1-3-.5 1.5-1.5 2-2 1 1-3-1-6-3-9z"/>',
+    check: s => s.streak.count >= 3 },
+  { id:"unstoppable", icon:'<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+    check: s => s.streak.count >= 7 },
+  { id:"perfect_score", icon:'<polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18 5.5 22 7 14.5 2 9.5 9 9 12 2"/>',
+    check: s => s.lifetime.quizzesPerfect >= 1 },
+  { id:"goal_getter", icon:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>',
+    check: s => s.lifetime.goalDaysReached >= 5 },
+  { id:"test_ready", icon:'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/>',
+    check: s => (s.lifetime.practiceTestsTaken || 0) >= 1 }
+];
+
+function renderBadges(){
+  const wrap = document.getElementById("badgesGrid");
+  if(!wrap) return;
+  wrap.innerHTML = "";
+  BADGES.forEach(b=>{
+    const unlocked = b.check(state);
+    const dict = I18N[state.lang];
+    const el = document.createElement("div");
+    el.className = "badge" + (unlocked ? " unlocked" : "");
+    el.title = dict["badge_" + b.id + "_desc"] || "";
+    el.innerHTML = `
+      <svg class="icon" viewBox="0 0 24 24">${b.icon}</svg>
+      <div class="badge-name">${dict["badge_" + b.id] || b.id}</div>
+    `;
+    wrap.appendChild(el);
+  });
+}
+
+// ============ ACTIVITY HEATMAP ============
+function renderHeatmap(){
+  const wrap = document.getElementById("heatmapGrid");
+  if(!wrap) return;
+  wrap.innerHTML = "";
+
+  const totalDays = 84;
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const start = new Date(today);
+  start.setDate(start.getDate() - (totalDays - 1));
+  const startDow = start.getDay();
+
+  for(let i = 0; i < startDow; i++){
+    const pad = document.createElement("div");
+    pad.className = "heat-cell empty";
+    wrap.appendChild(pad);
+  }
+
+  for(let i = 0; i < totalDays; i++){
+    const d = new Date(start);
+    d.setDate(d.getDate() + i);
+    const key = d.toISOString().slice(0,10);
+    const count = state.activityLog[key] || 0;
+    const cell = document.createElement("div");
+    cell.className = "heat-cell level-" + heatLevel(count);
+    cell.title = `${key}: ${count}`;
+    wrap.appendChild(cell);
+  }
+}
+
+function heatLevel(count){
+  if(count <= 0) return 0;
+  if(count <= 2) return 1;
+  if(count <= 5) return 2;
+  if(count <= 9) return 3;
+  return 4;
+}
+
+// ============ PRINTABLE WEEKLY REPORT ============
+function buildWeeklyReport(){
+  const dict = I18N[state.lang];
+  const today = new Date();
+  const weekAgo = new Date(today);
+  weekAgo.setDate(weekAgo.getDate() - 6);
+  let weekTotal = 0;
+  for(let i = 0; i < 7; i++){
+    const d = new Date(weekAgo);
+    d.setDate(d.getDate() + i);
+    weekTotal += state.activityLog[d.toISOString().slice(0,10)] || 0;
+  }
+  const unlockedBadges = BADGES.filter(b => b.check(state)).map(b => dict["badge_" + b.id]);
+
+  document.getElementById("reportRange").textContent =
+    `${weekAgo.toLocaleDateString()} – ${today.toLocaleDateString()}`;
+  document.getElementById("reportStudent").textContent = state.user ? state.user.name : "—";
+  document.getElementById("reportActions").textContent = weekTotal;
+  document.getElementById("reportStreak").textContent = state.streak.count;
+  document.getElementById("reportMessages").textContent = state.lifetime.messages;
+  document.getElementById("reportFlashcards").textContent = state.lifetime.flashcardsKnown;
+  document.getElementById("reportQuizzes").textContent = state.lifetime.quizzesTaken;
+  document.getElementById("reportBadges").textContent = unlockedBadges.length ? unlockedBadges.join(", ") : "—";
+}
+
+document.getElementById("printReportBtn").addEventListener("click", ()=>{
+  buildWeeklyReport();
+  window.print();
+});
+
+// ============ REMINDER BANNER ============
+function evaluateReminderBanner(){
+  const banner = document.getElementById("reminderBanner");
+  const today = todayStr();
+  const studiedToday = state.goal.date === today && state.goal.progress > 0;
+  if(!studiedToday && state.streak.lastActiveDate){
+    banner.classList.add("show");
+  } else {
+    banner.classList.remove("show");
+  }
+}
+function hideReminderBanner(){
+  document.getElementById("reminderBanner").classList.remove("show");
+}
+document.getElementById("reminderBannerClose").addEventListener("click", hideReminderBanner);
+
+document.getElementById("remindersToggle").addEventListener("change", (e)=>{
+  state.remindersEnabled = e.target.checked;
+  saveStreakData();
+  if(state.remindersEnabled && "Notification" in window && Notification.permission === "default"){
+    Notification.requestPermission();
+  }
+});
+
+// while the tab stays open, nudge with a real OS notification once a day if reminders are on
+setInterval(()=>{
+  if(!state.remindersEnabled) return;
+  if(!("Notification" in window) || Notification.permission !== "granted") return;
+  const today = todayStr();
+  const studiedToday = state.goal.date === today && state.goal.progress > 0;
+  if(!studiedToday){
+    new Notification(I18N[state.lang].reminderNotifTitle, { body: I18N[state.lang].reminderNotifBody });
+  }
+}, 60 * 60 * 1000);
+
+// ============ INIT ============
+loadStreakData();
+document.getElementById("remindersToggle").checked = state.remindersEnabled;
+document.getElementById("densitySelect").value = state.density;
+document.getElementById("chat").classList.toggle("compact", state.density === "compact");
+document.getElementById("timestampsToggle").checked = state.showTimestamps;
+document.getElementById("soundEffectsToggle").checked = state.soundEffects;
+populateDepthQuickSelect();
+searchInput.value = `${state.year} — ${state.classType}`;
+renderSessionTabs();
+renderChatFromSession();
+applyTranslations();
+renderBadges();
+renderHeatmap();
+evaluateReminderBanner();
+tryAutoSignIn();
+renderTopicChips();
+
+</script>
+</body>
+</html>
